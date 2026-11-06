@@ -1,0 +1,1391 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101820">
+<title>Магнат онлайн</title>
+<style>
+:root{
+  --bg:#101820;--panel:#18232e;--panel2:#202e3b;--line:#2c3e50;--text:#e9eef3;--muted:#8fa3b5;
+  --accent:#2ecc71;--accent2:#27ae60;--warn:#f39c12;--bad:#e74c3c;--board:#efe9d6;--cell:#f8f4e6;--ink:#1d1d1d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:var(--panel2);color:var(--text);transition:filter .15s,transform .05s}
+button:hover:not(:disabled){filter:brightness(1.15)}
+button:active:not(:disabled){transform:scale(.97)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.pri{background:var(--accent2);color:#fff;font-weight:700}
+button.warn{background:#b9770e;color:#fff}
+button.bad{background:#c0392b;color:#fff}
+button.sm{padding:5px 9px;font-size:13px;border-radius:7px}
+input,select{font:inherit;background:#0c131a;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none;min-width:0}
+input:focus,select:focus{border-color:var(--accent)}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+h1,h2,h3{margin:0 0 10px}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;border:2px solid #fff3;flex:0 0 auto}
+
+/* ---------- lobby / wait ---------- */
+.center-screen{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px}
+.lob{width:100%;max-width:520px;display:flex;flex-direction:column;gap:14px}
+.logo{font-size:40px;font-weight:900;letter-spacing:1px;text-align:center;margin:10px 0 0}
+.logo span{color:var(--accent)}
+.sub{text-align:center;color:var(--muted);margin-top:-6px}
+.lob .card>*+*{margin-top:10px}
+.lob input{width:100%}
+.split{display:flex;gap:8px}.split>input{flex:1}
+.code{font-size:34px;font-weight:900;letter-spacing:6px;text-align:center;color:var(--accent);user-select:all}
+.mem{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--panel2);border-radius:10px}
+.mem .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+details summary{cursor:pointer;font-weight:600}
+details ul{padding-left:18px;margin:8px 0;color:#c7d3de;line-height:1.45}
+.net{position:fixed;top:8px;right:8px;z-index:50;font-size:12px;padding:4px 9px;border-radius:20px;background:#0009;display:flex;gap:6px;align-items:center}
+.net i{width:8px;height:8px;border-radius:50%;background:#888;display:inline-block}
+.net.inline{position:static;background:var(--panel)}
+.net.online i{background:var(--accent)}.net.connecting i{background:var(--warn)}.net.offline i{background:var(--bad)}
+
+/* ---------- game layout ---------- */
+#game{display:flex;gap:12px;padding:8px;height:100vh;height:100dvh}
+#boardWrap{flex:0 0 auto;width:min(calc(100vh - 16px),calc(100vw - 372px));width:min(calc(100dvh - 16px),calc(100vw - 372px));align-self:flex-start}
+#side{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.board{position:relative;width:100%;aspect-ratio:1;display:grid;grid-template-columns:1.6fr repeat(9,1fr) 1.6fr;grid-template-rows:1.6fr repeat(9,1fr) 1.6fr;background:var(--board);border:2px solid #222;border-radius:8px;container-type:inline-size;overflow:hidden;user-select:none}
+.cell{position:relative;background:var(--cell);outline:1px solid #555;display:flex;overflow:hidden;cursor:pointer;color:var(--ink);font-size:max(6px,1.18cqw);line-height:1.08}
+.cell:hover{background:#fffbe9}
+.s0{flex-direction:column}.s2{flex-direction:column-reverse}.s1{flex-direction:row-reverse}.s3{flex-direction:row}
+.bar{flex:0 0 22%;display:flex;align-items:center;justify-content:center;gap:.25cqw;flex-wrap:wrap}
+.s1 .bar,.s3 .bar{flex-direction:column}
+.ct{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;padding:.35cqw .15cqw;min-width:0;min-height:0}
+.s1 .ct,.s3 .ct{justify-content:center;gap:.3cqw}
+.nm{font-weight:700;overflow-wrap:anywhere;hyphens:auto}
+.pr{opacity:.75;font-size:max(5.5px,1.05cqw)}
+.ic{font-size:2.3cqw;line-height:1}
+.corner{flex-direction:column;align-items:center;justify-content:center;text-align:center;font-weight:800;gap:.4cqw;font-size:max(7px,1.4cqw)}
+.corner .ic{font-size:4.2cqw}
+.hs{width:1.15cqw;height:1.15cqw;background:#2e7d32;border:1px solid #fff;border-radius:2px}
+.ht{width:2.4cqw;height:1.3cqw;background:#c62828;border:1px solid #fff;border-radius:2px}
+.cell.owned{box-shadow:inset 0 0 0 .5cqw var(--oc)}
+.cell.mort .ct,.cell.mort .bar{opacity:.3}
+.cell.mort::after{content:"ЗАЛОГ";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;color:#b71c1c;font-size:max(6px,1.2cqw);transform:rotate(-28deg)}
+.cell.here{background:#fff3c4}
+.mid{grid-row:2/11;grid-column:2/11;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.6cqw;color:var(--ink);padding:2cqw;position:relative;background:radial-gradient(circle at 50% 40%,#f7f2e1,#e6dec4)}
+.mid .title{font-size:6.5cqw;font-weight:900;letter-spacing:.6cqw;color:#1f4d33;transform:rotate(-8deg);text-shadow:0 .3cqw 0 #0001}
+.mid .title span{color:#c0392b}
+.dice{display:flex;gap:2cqw}
+.die{width:8cqw;height:8cqw;background:#fff;border-radius:1.4cqw;box-shadow:0 .5cqw 1.2cqw #0003,inset 0 -.4cqw 0 #0001;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:1cqw}
+.die i{display:block;margin:auto;width:1.6cqw;height:1.6cqw;border-radius:50%;background:#222;visibility:hidden}
+.die i.on{visibility:visible}
+.die.roll{animation:roll .5s ease-out}
+@keyframes roll{0%{transform:rotate(0) scale(.6)}50%{transform:rotate(200deg) scale(1.15)}100%{transform:rotate(360deg) scale(1)}}
+.status{font-size:max(12px,2.3cqw);font-weight:700;text-align:center}
+.acts{display:flex;flex-wrap:wrap;gap:1.2cqw;justify-content:center;max-width:90%}
+.acts button{font-size:clamp(13px,2.1cqw,18px);padding:1.2cqw 2.2cqw}
+.acts .info{width:100%;text-align:center;font-size:clamp(12px,1.9cqw,16px)}
+.cardpop{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.8);width:58%;background:#fff;border-radius:2cqw;box-shadow:0 2cqw 5cqw #0005;padding:3cqw;text-align:center;opacity:0;pointer-events:none;transition:.25s;z-index:5;color:#222}
+.cardpop.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.cardpop h4{margin:0 0 1.5cqw;font-size:3cqw}
+.cardpop p{margin:0;font-size:max(13px,2.3cqw)}
+.cardpop.chance h4{color:#1e8449}.cardpop.chest h4{color:#1f618d}
+.tokens{position:absolute;inset:0;pointer-events:none;z-index:4}
+.tok{position:absolute;width:3.6cqw;height:3.6cqw;border-radius:50%;border:.4cqw solid #fff;transform:translate(-50%,-50%);transition:left .16s linear,top .16s linear;box-shadow:0 .3cqw .8cqw #0007;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:1.8cqw;text-shadow:0 0 .4cqw #000}
+.tok.cur{animation:pulse 1s infinite alternate}
+@keyframes pulse{to{box-shadow:0 0 0 .8cqw #fff6,0 .3cqw .8cqw #0007}}
+
+/* side */
+.plist{display:flex;flex-direction:column;gap:6px}
+.pl{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:14px}
+.pl.cur{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.pl.out{opacity:.45;text-decoration:line-through}
+.pl .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.pl .mn{font-weight:800;font-variant-numeric:tabular-nums}
+.pl .tag{font-size:12px}
+.tabs{display:flex;gap:4px}
+.tabs button{flex:1;padding:8px 4px;font-size:13px;border-radius:9px 9px 0 0;background:var(--panel)}
+.tabs button.on{background:var(--panel2);color:var(--accent);font-weight:700}
+.tabbody{flex:1;min-height:0;overflow:auto;background:var(--panel2);border-radius:0 0 12px 12px;padding:10px}
+.asset{display:flex;align-items:center;gap:6px;padding:6px;border-bottom:1px solid #ffffff10;font-size:13px;flex-wrap:wrap}
+.asset .sw{width:10px;height:28px;border-radius:3px;flex:0 0 auto}
+.asset .an{flex:1;min-width:110px}
+.asset .an small{color:var(--muted);display:block}
+.trade{background:var(--panel);border-radius:10px;padding:10px;margin-bottom:8px;font-size:13px;line-height:1.4}
+.log div{font-size:13px;padding:3px 0;border-bottom:1px solid #ffffff08;color:#cdd8e2}
+.chat{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.chat b{font-weight:700}
+.chatbox{display:flex;gap:6px;margin-top:8px}.chatbox input{flex:1;padding:8px 10px}
+#mbar{display:none}
+
+/* modal */
+.modal{position:fixed;inset:0;background:#000a;z-index:100;display:flex;align-items:center;justify-content:center;padding:12px}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;width:100%;max-width:520px;max-height:92vh;overflow:auto;position:relative}
+.mbox .x{position:absolute;right:10px;top:10px;padding:4px 10px}
+.pcard{border-radius:12px;overflow:hidden;background:#fff;color:#222;margin-bottom:12px}
+.pcard .hd{padding:14px;text-align:center;font-weight:900;font-size:20px;color:#fff;text-shadow:0 1px 2px #0008}
+.pcard table{width:100%;border-collapse:collapse;font-size:14px}
+.pcard td{padding:5px 14px;border-bottom:1px solid #eee}.pcard td:last-child{text-align:right;font-weight:700}
+.tcols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tcol{background:var(--panel2);border-radius:10px;padding:8px;font-size:13px}
+.tcol label{display:flex;gap:6px;align-items:center;padding:4px 0}
+.tcol input[type=number]{width:100%;margin-top:6px;padding:7px}
+#toasts{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:min(92vw,420px)}
+.toast{background:#000d;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;box-shadow:0 4px 18px #0006;animation:tin .2s}
+.toast.bad{background:#a93226ee}
+@keyframes tin{from{opacity:0;transform:translateY(-8px)}}
+.winner{font-size:max(16px,3.2cqw);font-weight:900;color:#1f4d33;text-align:center}
+
+@media (max-width:900px){
+  #game{flex-direction:column;height:auto;padding:6px 6px 96px}
+  #boardWrap{width:100%;max-width:none}
+  #side{overflow:visible}
+  .tabbody{max-height:none;min-height:240px}
+  .mid .acts{display:none}
+  .mid{gap:2.4cqw}
+  .status{font-size:3.6cqw}
+  #mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;background:#0b1117f2;border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom));flex-direction:column;gap:6px;backdrop-filter:blur(6px)}
+  #mbar .acts{max-width:none}
+  #mbar .acts button{font-size:15px;padding:11px 14px;flex:1 1 auto}
+  #mbar .acts .info{font-size:13px}
+  .tcols{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="net hidden" id="net"><i></i><span>сеть</span></div>
+
+<!-- ============ LOBBY ============ -->
+<div id="lobby" class="center-screen">
+  <div class="lob">
+    <div class="logo">🎩 МАГ<span>НАТ</span></div>
+    <div class="sub">Экономическая настольная игра онлайн · 2–8 игроков · ПК и телефон</div>
+    <div id="resumeBox" class="card hidden"></div>
+    <div class="card">
+      <label class="muted">Ваше имя</label>
+      <input id="nameInp" maxlength="16" placeholder="Например, Матвей">
+      <button class="pri" id="btnCreate" style="width:100%">➕ Создать комнату</button>
+      <div class="split"><input id="codeInp" maxlength="5" placeholder="Код комнаты" style="text-transform:uppercase"><button id="btnJoin">Войти</button></div>
+      <button id="btnSolo" style="width:100%">🤖 Играть с ботами (без интернета)</button>
+    </div>
+    <div class="card">
+      <details>
+        <summary>📖 Правила</summary>
+        <ul>
+          <li>Бросайте кубики и ходите по полю. Каждый проход через «Старт» — +2 000 ₽.</li>
+          <li>Попав на свободный город, порт или предприятие, его можно купить. Владелец получает аренду с соперников.</li>
+          <li>Собрали все города одного цвета — аренда удваивается и можно строить дома (до 4) и отель. Стройте равномерно.</li>
+          <li>Дубль — ходите ещё раз. Три дубля подряд — в тюрьму. Из тюрьмы: выбросить дубль, заплатить 500 ₽ или использовать карту освобождения.</li>
+          <li>Не хватает денег — продавайте дома, закладывайте имущество, договаривайтесь со сделками. Иначе — банкротство.</li>
+          <li>Сделки: предлагайте обмен городами и деньгами любому игроку на вкладке «Сделки».</li>
+          <li>Побеждает последний, кто не обанкротился.</li>
+        </ul>
+      </details>
+    </div>
+    <div class="muted" style="font-size:12px;text-align:center">Создатель комнаты держит игру у себя — не закрывайте у него вкладку. Если связь пропала, игра восстановится при повторном входе.</div>
+  </div>
+</div>
+
+<!-- ============ WAIT ROOM ============ -->
+<div id="wait" class="center-screen hidden">
+  <div class="lob">
+    <div class="logo" style="font-size:30px">🎩 МАГ<span>НАТ</span></div>
+    <div class="card" style="text-align:center">
+      <div class="muted">Код комнаты</div>
+      <div class="code" id="wCode">-----</div>
+      <div class="row" style="justify-content:center">
+        <button class="sm" id="btnCopyCode">📋 Код</button>
+        <button class="sm" id="btnCopyLink">🔗 Ссылка-приглашение</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Игроки <span class="muted" id="wCount"></span></h3>
+      <div id="wMembers" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div id="wHost">
+        <div class="row" style="margin-top:10px">
+          <button id="btnBot">🤖 Добавить бота</button>
+          <select id="selMoney" title="Стартовый капитал">
+            <option value="15000">Капитал 15 000 ₽</option>
+            <option value="20000">Капитал 20 000 ₽</option>
+            <option value="25000">Капитал 25 000 ₽</option>
+            <option value="10000">Капитал 10 000 ₽</option>
+          </select>
+        </div>
+        <button class="pri" id="btnStart" style="width:100%;margin-top:10px">▶ Начать игру</button>
+      </div>
+      <div id="wGuest" class="muted" style="margin-top:10px">Ожидаем, пока создатель комнаты начнёт игру…</div>
+    </div>
+    <div class="card">
+      <h3>Чат</h3>
+      <div class="chat" id="wChat"></div>
+      <div class="chatbox"><input id="wChatInp" maxlength="200" placeholder="Сообщение…"><button id="wChatBtn">➤</button></div>
+    </div>
+    <button id="btnLeaveWait">← Выйти</button>
+  </div>
+</div>
+
+<!-- ============ GAME ============ -->
+<div id="game" class="hidden">
+  <div id="boardWrap"><div class="board" id="board"></div></div>
+  <div id="side">
+    <div class="plist" id="plist"></div>
+    <div>
+      <div class="tabs" id="tabs">
+        <button data-t="assets" class="on">🏠 Активы</button>
+        <button data-t="trades">🤝 Сделки</button>
+        <button data-t="chat">💬 Чат</button>
+        <button data-t="log">📜 Журнал</button>
+      </div>
+    </div>
+    <div class="tabbody" id="tabbody">
+      <div id="tAssets"></div>
+      <div id="tTrades" class="hidden"></div>
+      <div id="tChat" class="hidden"><div class="chat" id="gChat"></div><div class="chatbox"><input id="gChatInp" maxlength="200" placeholder="Сообщение…"><button id="gChatBtn">➤</button></div></div>
+      <div id="tLog" class="hidden log"></div>
+    </div>
+    <div class="row">
+      <button class="sm" id="btnSurrender">🏳 Сдаться</button>
+      <button class="sm" id="btnLeaveGame">← Выйти</button>
+      <span class="muted" style="font-size:12px" id="roomLbl"></span>
+    </div>
+  </div>
+  <div id="mbar"><div class="acts" id="mActs"></div></div>
+</div>
+
+<div id="modal" class="modal hidden"><div class="mbox" id="mbox"></div></div>
+<div id="toasts"></div>
+
+<!-- ======================= GAME LOGIC ======================= -->
+<script id="logic">
+'use strict';
+const START = 15000, PASS = 2000, FINE = 500, JAIL = 10;
+const r10 = x => Math.round(x / 10) * 10;
+const fmt = n => Math.round(n).toLocaleString('ru-RU') + ' ₽';
+const GROUPS = {
+  brown:  {c:'#8d5a2b', h:500,  n:'Коричневые'},
+  sky:    {c:'#4fb3e8', h:500,  n:'Голубые'},
+  pink:   {c:'#d63f9b', h:1000, n:'Розовые'},
+  orange: {c:'#f08c1a', h:1000, n:'Оранжевые'},
+  red:    {c:'#e0322b', h:1500, n:'Красные'},
+  yellow: {c:'#f2cc13', h:1500, n:'Жёлтые'},
+  green:  {c:'#2a9a4b', h:2000, n:'Зелёные'},
+  navy:   {c:'#23409a', h:2000, n:'Синие'},
+};
+const OWN = new Set(['prop', 'port', 'util']);
+const BOARD = [];
+function add(o) { o.id = BOARD.length; BOARD.push(o); }
+function city(n, g, price, s) { const b = r10(price * 0.07); add({type:'prop', n, s: s || n, g, price, rent:[1, 5, 15, 40, 50, 60].map(m => m * b)}); }
+const port = n => add({type:'port', n:'Порт ' + n, s:n, price:2000, icon:'⚓'});
+const chance = () => add({type:'chance', n:'Удача', icon:'🍀'});
+const chest = () => add({type:'chest', n:'Казна', icon:'💼'});
+add({type:'start', n:'Старт', icon:'🏁'});
+city('Тула', 'brown', 600); chest(); city('Рязань', 'brown', 600);
+add({type:'tax', n:'Подоходный налог', s:'Налог', amt:2000, icon:'🧾'});
+port('Северный');
+city('Самара', 'sky', 1000); chance(); city('Уфа', 'sky', 1000); city('Пермь', 'sky', 1200);
+add({type:'jail', n:'Тюрьма', icon:'🔒'});
+city('Казань', 'pink', 1400); add({type:'util', n:'Электросеть', s:'Электро­сеть', price:1500, icon:'⚡'});
+city('Нижний Новгород', 'pink', 1400, 'Н. Новгород'); city('Екатеринбург', 'pink', 1600, 'Екатерин­бург');
+port('Восточный');
+city('Сочи', 'orange', 1800); chest(); city('Анапа', 'orange', 1800); city('Геленджик', 'orange', 2000, 'Гелен­джик');
+add({type:'free', n:'Отдых', icon:'🏖️'});
+city('Новосибирск', 'red', 2200, 'Новоси­бирск'); chance(); city('Красноярск', 'red', 2200, 'Красно­ярск'); city('Иркутск', 'red', 2400);
+port('Южный');
+city('Владивосток', 'yellow', 2600, 'Влади­восток'); city('Хабаровск', 'yellow', 2600, 'Хаба­ровск');
+add({type:'util', n:'Водоканал', s:'Водо­канал', price:1500, icon:'💧'}); city('Мурманск', 'yellow', 2800, 'Мур­манск');
+add({type:'gotojail', n:'Арест', icon:'👮'});
+city('Ростов-на-Дону', 'green', 3000, 'Ростов'); city('Краснодар', 'green', 3000, 'Красно­дар'); chest(); city('Воронеж', 'green', 3200);
+port('Западный'); chance(); city('Санкт-Петербург', 'navy', 3500, 'Петер­бург');
+add({type:'tax', n:'Налог на роскошь', s:'Роскошь', amt:1000, icon:'💎'}); city('Москва', 'navy', 4000);
+
+const PORT_RENT = [250, 500, 1000, 2000];
+const CHANCE = [
+  {t:'Ваш стартап победил на конкурсе. Получите 1 500 ₽', a:['money', 1500]},
+  {t:'Отправляйтесь на «Старт»', a:['to', 0]},
+  {t:'Деловая встреча в Москве — отправляйтесь туда', a:['to', 39]},
+  {t:'Командировка в Новосибирск', a:['to', 21]},
+  {t:'Конференция в Казани — отправляйтесь туда', a:['to', 11]},
+  {t:'Срочная поставка! Идите в ближайший порт. Если он чей-то — заплатите двойную аренду', a:['port']},
+  {t:'Навигатор ошибся: вернитесь на 3 клетки назад', a:['back', 3]},
+  {t:'Налоговая проверка нашла нарушения — отправляйтесь в тюрьму', a:['jail']},
+  {t:'Знакомый адвокат: карта освобождения из тюрьмы', a:['jcard']},
+  {t:'Штраф за парковку: 300 ₽', a:['money', -300]},
+  {t:'Вы угощаете всех ужином: заплатите каждому игроку по 500 ₽', a:['each', -500]},
+  {t:'Капремонт: 250 ₽ за каждый дом и 1 000 ₽ за каждый отель', a:['repair', 250, 1000]},
+  {t:'Дивиденды по акциям: 500 ₽', a:['money', 500]},
+  {t:'Ваш блог набрал миллион подписчиков: 1 000 ₽', a:['money', 1000]},
+  {t:'Экскурсия в Порт Северный', a:['to', 5]},
+  {t:'Отпуск в Сочи — отправляйтесь туда', a:['to', 16]},
+];
+const CHEST = [
+  {t:'Удачная сделка на бирже: получите 2 000 ₽', a:['money', 2000]},
+  {t:'Визит к стоматологу: 500 ₽', a:['money', -500]},
+  {t:'Возврат налогового вычета: 200 ₽', a:['money', 200]},
+  {t:'У вас день рождения! Каждый игрок дарит вам 100 ₽', a:['each', 100]},
+  {t:'Вы получили наследство: 1 000 ₽', a:['money', 1000]},
+  {t:'Продление страховки: 500 ₽', a:['money', -500]},
+  {t:'Вы нашли кошелёк и получили награду: 100 ₽', a:['money', 100]},
+  {t:'Продажа старого автомобиля: 500 ₽', a:['money', 500]},
+  {t:'Амнистия: карта освобождения из тюрьмы', a:['jcard']},
+  {t:'Вас перепутали с мошенником — отправляйтесь в тюрьму', a:['jail']},
+  {t:'Отправляйтесь на «Старт»', a:['to', 0]},
+  {t:'Курсы повышения квалификации: 1 500 ₽', a:['money', -1500]},
+  {t:'Консультация для соседа: получите 250 ₽', a:['money', 250]},
+  {t:'Благоустройство двора: 400 ₽ за дом и 1 150 ₽ за отель', a:['repair', 400, 1150]},
+  {t:'Премия по итогам года: 1 000 ₽', a:['money', 1000]},
+  {t:'Проценты по вкладу: 250 ₽', a:['money', 250]},
+];
+
+class GErr extends Error {}
+const err = m => new GErr(m);
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const range = n => [...Array(n).keys()];
+
+class Game {
+  constructor(members, opts = {}) {
+    if (!members) return;
+    const money = opts.money || START;
+    this.players = shuffle(members.map(m => ({pid:m.pid, name:m.name, color:m.color, money, pos:0, jail:false, jt:0, cards:0, out:false})));
+    this.props = {};
+    for (const c of BOARD) if (OWN.has(c.type)) this.props[c.id] = {o:null, h:0, m:false};
+    Object.assign(this, {cur:0, phase:'roll', dice:[1, 1], rolls:0, dbl:0, again:false, pend:null, debts:[], trades:[], tseq:0,
+      log:[], lseq:0, card:null, cseq:0, winner:null, turn:1, mult:1});
+    this.decks = {chance:shuffle(range(CHANCE.length)), chest:shuffle(range(CHEST.length))};
+    this.L(`Игра началась! Первым ходит ${this.players[0].name}`);
+  }
+  static from(o) { return Object.assign(Object.create(Game.prototype), JSON.parse(JSON.stringify(o))); }
+  pub() { const o = JSON.parse(JSON.stringify(this)); delete o.decks; return o; }
+  L(m) { this.log.push({i:++this.lseq, m}); if (this.log.length > 100) this.log.shift(); }
+  P(pid) { return this.players.find(p => p.pid === pid); }
+  curP() { return this.players[this.cur]; }
+  alive() { return this.players.filter(p => !p.out); }
+  owned(pid) { return Object.keys(this.props).map(Number).filter(id => this.props[id].o === pid); }
+  grp(g) { return BOARD.filter(c => c.g === g).map(c => c.id); }
+  hasGroup(pid, g) { return pid != null && this.grp(g).every(id => this.props[id].o === pid); }
+  debtTotal() { return this.debts.reduce((s, d) => s + d.amt, 0); }
+  umCost(id) { return r10(BOARD[id].price * 0.55); }
+
+  act(pid, a, d = {}) {
+    if (this.phase === 'over') throw err('Игра окончена');
+    const p = this.P(pid);
+    if (!p || p.out) throw err('Вы не участвуете в игре');
+    switch (a) {
+      case 'build': return this.build(p, +d.cell);
+      case 'sell': return this.sell(p, +d.cell);
+      case 'mortgage': return this.mortgage(p, +d.cell);
+      case 'unmortgage': return this.unmortgage(p, +d.cell);
+      case 'offer': return this.offer(p, d);
+      case 'accept': return this.accept(p, +d.id);
+      case 'reject': case 'cancel': return this.dropTrade(p, +d.id, a);
+      case 'surrender': this.L(`${p.name} сдаётся`); return this.bankrupt(p);
+    }
+    if (this.curP() !== p) throw err('Сейчас не ваш ход');
+    switch (a) {
+      case 'roll': return this.roll(p);
+      case 'buy': return this.buy(p);
+      case 'decline': return this.decline(p);
+      case 'end':
+        if (this.phase !== 'end') throw err('Сначала завершите действия');
+        return this.next();
+      case 'payjail':
+        if (this.phase !== 'roll' || !p.jail) throw err('Вы не в тюрьме');
+        if (p.money < FINE) throw err('Недостаточно денег');
+        p.money -= FINE; p.jail = false; p.jt = 0;
+        return this.L(`${p.name} платит ${fmt(FINE)} и выходит из тюрьмы`);
+      case 'usecard':
+        if (this.phase !== 'roll' || !p.jail || !p.cards) throw err('Нет карты освобождения');
+        p.cards--; p.jail = false; p.jt = 0;
+        return this.L(`${p.name} использует карту освобождения`);
+      case 'paydebt': {
+        if (this.phase !== 'debt') throw err('У вас нет долгов');
+        if (p.money < this.debtTotal()) throw err('Недостаточно денег — продайте дома или заложите имущество');
+        for (const x of this.debts) { p.money -= x.amt; if (x.to != null) this.P(x.to).money += x.amt; }
+        this.L(`${p.name} погасил долг ${fmt(this.debtTotal())}`);
+        this.debts = [];
+        return this.after();
+      }
+      case 'bankrupt':
+        if (this.phase !== 'debt') throw err('Банкротство возможно только при долге');
+        this.L(`${p.name} объявляет себя банкротом`);
+        return this.bankrupt(p);
+    }
+    throw err('Неизвестное действие');
+  }
+
+  after() {
+    if (this.phase === 'over') return;
+    if (this.debts.length) this.phase = 'debt';
+    else if (this.pend != null) this.phase = 'buy';
+    else if (this.again) this.phase = 'roll';
+    else this.phase = 'end';
+  }
+
+  roll(p) {
+    if (this.phase !== 'roll') throw err('Сейчас нельзя бросать кубики');
+    const d1 = 1 + Math.floor(Math.random() * 6), d2 = 1 + Math.floor(Math.random() * 6), s = d1 + d2, dbl = d1 === d2;
+    this.dice = [d1, d2]; this.rolls++;
+    this.L(`${p.name} выбросил ${d1}+${d2}=${s}${dbl ? ' — дубль!' : ''}`);
+    if (p.jail) {
+      this.again = false;
+      if (dbl) { p.jail = false; p.jt = 0; this.L(`${p.name} выходит из тюрьмы благодаря дублю`); this.move(p, s); }
+      else if (++p.jt >= 3) {
+        p.jail = false; p.jt = 0;
+        this.L(`${p.name} отсидел 3 хода и платит штраф ${fmt(FINE)}`);
+        this.pay(p, null, FINE); this.move(p, s);
+      } else this.L(`${p.name} остаётся в тюрьме (попытка ${p.jt}/3)`);
+      return this.after();
+    }
+    if (dbl) {
+      if (++this.dbl >= 3) { this.L(`Три дубля подряд — ${p.name} отправляется в тюрьму!`); this.toJail(p); return this.after(); }
+      this.again = true;
+    } else this.again = false;
+    this.move(p, s);
+    this.after();
+  }
+  move(p, n) {
+    const np = p.pos + n;
+    if (np >= 40) { p.money += PASS; this.L(`${p.name} проходит «Старт» и получает ${fmt(PASS)}`); }
+    p.pos = np % 40; this.land(p);
+  }
+  moveTo(p, t) {
+    if (t <= p.pos) { p.money += PASS; this.L(`${p.name} проходит «Старт» и получает ${fmt(PASS)}`); }
+    p.pos = t; this.land(p);
+  }
+  toJail(p) { p.pos = JAIL; p.jail = true; p.jt = 0; this.again = false; this.dbl = 0; }
+  land(p) {
+    const c = BOARD[p.pos];
+    if (OWN.has(c.type)) {
+      const s = this.props[c.id];
+      if (s.o == null) this.pend = c.id;
+      else if (s.o !== p.pid) {
+        if (s.m) this.L(`${c.n} в залоге — аренда не взимается`);
+        else {
+          const r = this.rent(c.id) * this.mult, o = this.P(s.o);
+          this.L(`${p.name} платит аренду ${fmt(r)} игроку ${o.name} (${c.n})`);
+          this.pay(p, s.o, r);
+        }
+      }
+    } else if (c.type === 'tax') { this.L(`${p.name}: ${c.n.toLowerCase()} ${fmt(c.amt)}`); this.pay(p, null, c.amt); }
+    else if (c.type === 'chance' || c.type === 'chest') this.draw(p, c.type);
+    else if (c.type === 'gotojail') { this.L(`${p.name} арестован и отправляется в тюрьму!`); this.toJail(p); }
+    this.mult = 1;
+  }
+  rent(id) {
+    const c = BOARD[id], s = this.props[id];
+    if (c.type === 'prop') return s.h ? c.rent[s.h] : c.rent[0] * (this.hasGroup(s.o, c.g) ? 2 : 1);
+    const n = BOARD.filter(x => x.type === c.type && this.props[x.id].o === s.o).length;
+    if (c.type === 'port') return PORT_RENT[n - 1];
+    return (this.dice[0] + this.dice[1]) * (n >= 2 ? 100 : 40);
+  }
+  pay(p, to, amt) {
+    if (amt <= 0) return;
+    if (p.money >= amt) { p.money -= amt; if (to != null) this.P(to).money += amt; }
+    else { this.debts.push({to, amt}); this.L(`У ${p.name} не хватает денег: долг ${fmt(amt)}`); }
+  }
+  draw(p, deck) {
+    const d = this.decks[deck], idx = d.shift(); d.push(idx);
+    const card = (deck === 'chance' ? CHANCE : CHEST)[idx];
+    this.card = {deck, text:card.t, pid:p.pid, seq:++this.cseq};
+    this.L(`${p.name} — ${deck === 'chance' ? 'Удача' : 'Казна'}: «${card.t}»`);
+    const [k, v, w] = card.a;
+    switch (k) {
+      case 'money': if (v > 0) p.money += v; else this.pay(p, null, -v); break;
+      case 'to': this.moveTo(p, v); break;
+      case 'back': p.pos = (p.pos - v + 40) % 40; this.land(p); break;
+      case 'jail': this.toJail(p); break;
+      case 'jcard': p.cards++; break;
+      case 'each':
+        for (const o of this.alive()) if (o !== p) {
+          if (v > 0) { const x = Math.min(v, o.money); o.money -= x; p.money += x; }
+          else this.pay(p, o.pid, -v);
+        }
+        break;
+      case 'repair': {
+        let h = 0, H = 0;
+        for (const id of this.owned(p.pid)) { const x = this.props[id].h; if (x === 5) H++; else h += x; }
+        const sum = h * v + H * w;
+        this.L(sum ? `${p.name} платит за ремонт ${fmt(sum)}` : `У ${p.name} нет построек — ремонт бесплатный`);
+        this.pay(p, null, sum); break;
+      }
+      case 'port': {
+        let i = p.pos; do i = (i + 1) % 40; while (BOARD[i].type !== 'port');
+        this.mult = 2; this.moveTo(p, i); break;
+      }
+    }
+  }
+  buy(p) {
+    if (this.phase !== 'buy') throw err('Здесь нечего покупать');
+    const c = BOARD[this.pend];
+    if (p.money < c.price) throw err('Недостаточно денег');
+    p.money -= c.price; this.props[c.id].o = p.pid;
+    this.L(`${p.name} покупает ${c.n} за ${fmt(c.price)}`);
+    this.pend = null; this.after();
+  }
+  decline(p) {
+    if (this.phase !== 'buy') throw err('Здесь нечего покупать');
+    this.L(`${p.name} отказывается покупать ${BOARD[this.pend].n}`);
+    this.pend = null; this.after();
+  }
+  next() {
+    this.dbl = 0; this.again = false; this.pend = null; this.debts = [];
+    const n = this.players.length; let i = this.cur;
+    do i = (i + 1) % n; while (this.players[i].out);
+    this.cur = i; this.phase = 'roll'; this.turn++;
+    this.L(`Ходит ${this.players[i].name}`);
+  }
+
+  // ----- buildings & mortgage -----
+  ownErr(p, id) { const s = this.props[id]; if (!s) return 'Это нельзя купить'; if (s.o !== p.pid) return 'Это не ваша собственность'; return null; }
+  canBuild(p, id) {
+    const c = BOARD[id], e = this.ownErr(p, id); if (e) return e;
+    if (c.type !== 'prop') return 'Здесь нельзя строить';
+    if (!this.hasGroup(p.pid, c.g)) return 'Нужно владеть всеми городами этого цвета';
+    const g = this.grp(c.g), s = this.props[id];
+    if (g.some(i => this.props[i].m)) return 'В группе есть заложенные города';
+    if (s.h >= 5) return 'Уже построен отель';
+    if (s.h > Math.min(...g.map(i => this.props[i].h))) return 'Стройте равномерно';
+    if (this.debts.length && this.curP() === p) return 'Сначала погасите долг';
+    if (p.money < GROUPS[c.g].h) return 'Недостаточно денег';
+    return null;
+  }
+  canSell(p, id) {
+    const c = BOARD[id], e = this.ownErr(p, id); if (e) return e;
+    const s = this.props[id]; if (!s.h) return 'Здесь нет построек';
+    if (s.h < Math.max(...this.grp(c.g).map(i => this.props[i].h))) return 'Продавайте равномерно';
+    return null;
+  }
+  canMortgage(p, id) {
+    const c = BOARD[id], e = this.ownErr(p, id); if (e) return e;
+    if (this.props[id].m) return 'Уже в залоге';
+    if (c.type === 'prop' && this.grp(c.g).some(i => this.props[i].h)) return 'Сначала продайте постройки в группе';
+    return null;
+  }
+  canUnmortgage(p, id) {
+    const e = this.ownErr(p, id); if (e) return e;
+    if (!this.props[id].m) return 'Не в залоге';
+    if (this.debts.length && this.curP() === p) return 'Сначала погасите долг';
+    if (p.money < this.umCost(id)) return 'Недостаточно денег';
+    return null;
+  }
+  build(p, id) {
+    const e = this.canBuild(p, id); if (e) throw err(e);
+    const c = BOARD[id], s = this.props[id];
+    p.money -= GROUPS[c.g].h; s.h++;
+    this.L(`${p.name} строит ${s.h === 5 ? 'отель' : 'дом'} в городе ${c.n}`);
+    this.cleanTrades();
+  }
+  sell(p, id) {
+    const e = this.canSell(p, id); if (e) throw err(e);
+    const c = BOARD[id], s = this.props[id], v = GROUPS[c.g].h / 2;
+    p.money += v; this.L(`${p.name} продаёт ${s.h === 5 ? 'отель' : 'дом'} (${c.n}) за ${fmt(v)}`); s.h--;
+  }
+  mortgage(p, id) {
+    const e = this.canMortgage(p, id); if (e) throw err(e);
+    const c = BOARD[id]; this.props[id].m = true; p.money += c.price / 2;
+    this.L(`${p.name} закладывает ${c.n} за ${fmt(c.price / 2)}`);
+  }
+  unmortgage(p, id) {
+    const e = this.canUnmortgage(p, id); if (e) throw err(e);
+    const v = this.umCost(id); this.props[id].m = false; p.money -= v;
+    this.L(`${p.name} выкупает ${BOARD[id].n} из залога за ${fmt(v)}`);
+  }
+
+  // ----- trades -----
+  tradeErr(t) {
+    const a = this.P(t.from), b = this.P(t.to);
+    if (!a || !b || a.out || b.out || a === b) return 'Неверный игрок';
+    if (!t.give.length && !t.get.length) return 'Добавьте в сделку хотя бы один объект';
+    for (const id of t.give) if (!this.props[id] || this.props[id].o !== a.pid) return 'Объекты уже сменили владельца';
+    for (const id of t.get) if (!this.props[id] || this.props[id].o !== b.pid) return 'Объекты уже сменили владельца';
+    for (const id of [...t.give, ...t.get]) { const c = BOARD[id]; if (c.type === 'prop' && this.grp(c.g).some(i => this.props[i].h)) return `Сначала продайте постройки в группе (${c.n})`; }
+    if (!(Number.isInteger(t.gm) && Number.isInteger(t.tm) && t.gm >= 0 && t.tm >= 0)) return 'Неверная сумма';
+    if (a.money < t.gm) return `У ${a.name} не хватает денег`;
+    if (b.money < t.tm) return `У ${b.name} не хватает денег`;
+    return null;
+  }
+  offer(p, d) {
+    const ids = x => [...new Set((x || []).map(Number))];
+    const t = {id:++this.tseq, from:p.pid, to:d.to, give:ids(d.give), get:ids(d.get), gm:Math.floor(+d.gm || 0), tm:Math.floor(+d.tm || 0), ts:Date.now()};
+    if (this.trades.filter(x => x.from === p.pid).length >= 3) throw err('Не больше 3 активных предложений');
+    const e = this.tradeErr(t); if (e) throw err(e);
+    this.trades.push(t);
+    this.L(`${p.name} предлагает сделку игроку ${this.P(t.to).name}`);
+  }
+  accept(p, id) {
+    const t = this.trades.find(x => x.id === id && x.to === p.pid);
+    if (!t) throw err('Сделка не найдена');
+    const e = this.tradeErr(t);
+    if (e) { this.trades = this.trades.filter(x => x !== t); throw err(e); }
+    const a = this.P(t.from);
+    t.give.forEach(i => this.props[i].o = p.pid);
+    t.get.forEach(i => this.props[i].o = a.pid);
+    a.money += t.tm - t.gm; p.money += t.gm - t.tm;
+    this.trades = this.trades.filter(x => x !== t);
+    this.L(`🤝 Сделка между ${a.name} и ${p.name} состоялась`);
+    this.cleanTrades();
+  }
+  dropTrade(p, id, a) {
+    const t = this.trades.find(x => x.id === id && (a === 'cancel' ? x.from : x.to) === p.pid);
+    if (!t) throw err('Сделка не найдена');
+    this.trades = this.trades.filter(x => x !== t);
+    if (a === 'reject') this.L(`${p.name} отклоняет сделку от ${this.P(t.from).name}`);
+  }
+  cleanTrades() { this.trades = this.trades.filter(x => !this.tradeErr(x)); }
+
+  bankrupt(p) {
+    const wasCur = this.curP() === p;
+    for (const id of this.owned(p.pid)) { const s = this.props[id]; if (s.h) { p.money += s.h * GROUPS[BOARD[id].g].h / 2; s.h = 0; } }
+    let heir = null;
+    if (wasCur && this.debts.length) {
+      const cr = [...new Set(this.debts.map(d => d.to))];
+      for (const d of this.debts) { const x = Math.min(d.amt, p.money); p.money -= x; if (d.to != null) this.P(d.to).money += x; }
+      if (cr.length === 1 && cr[0] != null) heir = this.P(cr[0]);
+      this.debts = [];
+    }
+    for (const id of this.owned(p.pid)) { const s = this.props[id]; if (heir) s.o = heir.pid; else { s.o = null; s.m = false; } }
+    if (heir) { heir.money += p.money; heir.cards += p.cards; this.L(`Имущество ${p.name} переходит к ${heir.name}`); }
+    else this.L(`Имущество ${p.name} возвращается банку`);
+    p.money = 0; p.cards = 0; p.out = true; p.jail = false;
+    this.trades = this.trades.filter(t => t.from !== p.pid && t.to !== p.pid);
+    const al = this.alive();
+    if (al.length <= 1) { this.winner = al[0] ? al[0].pid : null; this.phase = 'over'; this.L(`🏆 Победитель — ${al[0] ? al[0].name : '—'}!`); return; }
+    if (wasCur) this.next();
+  }
+}
+
+// ----- simple AI (bots and autopilot for disconnected players) -----
+function botAct(g, pid, canTrade) {
+  const p = g.P(pid);
+  if (!p || p.out || g.phase === 'over' || g.curP() !== p) return null;
+  const mine = g.owned(pid);
+  if (g.phase === 'debt') {
+    if (p.money >= g.debtTotal()) return ['paydebt'];
+    const s = mine.filter(id => !g.canSell(p, id)).sort((a, b) => g.props[b].h - g.props[a].h)[0];
+    if (s != null) return ['sell', {cell:s}];
+    const score = id => BOARD[id].price + (BOARD[id].g && g.hasGroup(pid, BOARD[id].g) ? 10000 : 0);
+    const m = mine.filter(id => !g.canMortgage(p, id)).sort((a, b) => score(a) - score(b))[0];
+    if (m != null) return ['mortgage', {cell:m}];
+    return ['bankrupt'];
+  }
+  if (g.phase === 'roll') {
+    if (p.jail) { if (p.cards) return ['usecard']; if (p.money >= FINE + 4000 && g.turn < 60) return ['payjail']; }
+    return ['roll'];
+  }
+  if (g.phase === 'buy') {
+    const c = BOARD[g.pend];
+    const completes = c.g && g.grp(c.g).every(i => i === c.id || g.props[i].o === pid);
+    const reserve = completes ? 0 : (g.turn < 25 ? 500 : 1500);
+    return p.money - c.price >= reserve ? ['buy'] : ['decline'];
+  }
+  if (g.phase === 'end') {
+    const um = mine.find(id => g.props[id].m && !g.canUnmortgage(p, id) && p.money - g.umCost(id) > 6000);
+    if (um != null) return ['unmortgage', {cell:um}];
+    const b = mine.filter(id => !g.canBuild(p, id) && p.money - GROUPS[BOARD[id].g].h >= 2500).sort((x, y) => g.props[x].h - g.props[y].h)[0];
+    if (b != null) return ['build', {cell:b}];
+    if (canTrade) { const o = botOffer(g, p); if (o) return ['offer', o]; }
+    return ['end'];
+  }
+  return null;
+}
+// a bot tries to buy the last missing city of a colour group
+function botOffer(g, p) {
+  if (g.trades.some(t => t.from === p.pid)) return null;
+  g.asked = g.asked || {};
+  for (const gname in GROUPS) {
+    const ids = g.grp(gname), missing = ids.filter(i => g.props[i].o !== p.pid);
+    if (missing.length !== 1 || ids.length - missing.length < 1) continue;
+    const id = missing[0], s = g.props[id];
+    if (s.o == null || ids.some(i => g.props[i].h)) continue;
+    const key = p.pid + ':' + id;
+    if (g.asked[key] && g.turn - g.asked[key] < 12) continue;
+    const price = r10(BOARD[id].price * (s.m ? 2.5 : 4.5));
+    if (p.money - price < 1500) continue;
+    g.asked[key] = g.turn;
+    return {to:s.o, give:[], get:[id], gm:price, tm:0};
+  }
+  return null;
+}
+function botTrade(g, t) {
+  const me = t.to, them = t.from;
+  const val = id => BOARD[id].price * (g.props[id].m ? 0.5 : 1);
+  let recv = t.gm, give = t.tm;
+  for (const id of t.give) { recv += val(id); const c = BOARD[id]; if (c.g && g.grp(c.g).every(i => g.props[i].o === me || t.give.includes(i))) recv += c.price; }
+  for (const id of t.get) { give += val(id); const c = BOARD[id]; if (c.g && g.grp(c.g).every(i => g.props[i].o === them || t.get.includes(i))) give += c.price * 2.5; }
+  return recv >= give * 1.2 + 100;
+}
+if (typeof module !== 'undefined') module.exports = {Game, GErr, BOARD, GROUPS, CHANCE, CHEST, botAct, botTrade, START, PASS, FINE};
+</script>
+
+<!-- ======================= NETWORK + UI ======================= -->
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
+const PREFIX = 'magnat-ru-v1-';
+const COLORS = ['#e53935', '#1e88e5', '#43a047', '#fbc02d', '#8e24aa', '#fb8c00', '#00acc1', '#ec407a'];
+const BOT_NAMES = ['Аркадий', 'Варвара', 'Геннадий', 'Зоя', 'Лев', 'Марта', 'Остап', 'Фёдор'];
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+const QS = new URLSearchParams(location.search);
+function peerOpts() {
+  const o = {debug:1};
+  if (QS.get('peerHost')) { o.host = QS.get('peerHost'); o.port = +(QS.get('peerPort') || 443); o.path = QS.get('peerPath') || '/'; o.secure = QS.get('peerSecure') !== '0'; }
+  return o;
+}
+const rndId = (n = 12) => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => (b % 36).toString(36)).join('');
+
+let MODE = null;   // 'host' | 'guest' | null
+let ME = null;     // my pid
+let S = null;      // last view {room, game}
+let peer = null;
+
+function toast(msg, bad) {
+  const d = document.createElement('div'); d.className = 'toast' + (bad ? ' bad' : ''); d.textContent = msg;
+  $('#toasts').appendChild(d); setTimeout(() => d.remove(), bad ? 3500 : 2800);
+}
+function setNet(st) {
+  const n = $('#net'); n.classList.remove('hidden', 'online', 'connecting', 'offline'); n.classList.add(st);
+  n.querySelector('span').textContent = {online:'онлайн', connecting:'подключение…', offline:'нет сети'}[st];
+}
+function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
+
+// ======================= HOST =======================
+let room = null;            // authoritative room (host only)
+const conns = new Map();    // pid -> DataConnection
+let lastAct = 0, hostPeerTries = 0;
+
+function genCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 5; i++) s += A[Math.floor(Math.random() * A.length)]; return s; }
+function mem(pid) { return room.members.find(m => m.pid === pid); }
+function freeColor() { return COLORS.find(c => !room.members.some(m => m.color === c)) || '#999'; }
+function cleanName(n) { n = String(n || '').trim().slice(0, 16); return n || 'Игрок'; }
+
+function hostCreate(name, restored, offline) {
+  MODE = 'host';
+  if (restored) {
+    room = restored;
+    if (room.game) room.game = Game.from(room.game);
+    room.members.forEach(m => { if (!m.bot && m.pid !== room.host) { m.connected = false; m.discAt = Date.now(); } });
+  } else {
+    room = {code:genCode(), host:'h', members:[{pid:'h', name:cleanName(name), color:COLORS[0], bot:false, connected:true}], game:null, chat:[], money:START, offline:!!offline};
+  }
+  ME = room.host;
+  mem(ME).connected = true;
+  if (!room.offline) startHostPeer(); else $('#net').classList.add('hidden');
+  sync();
+}
+function startHostPeer() {
+  if (typeof Peer === 'undefined') { setNet('offline'); toast('Не удалось загрузить сетевой модуль — доступна только игра с ботами', true); return; }
+  setNet('connecting');
+  const pr = peer = new Peer(PREFIX + room.code, peerOpts());
+  pr.on('open', () => { hostPeerTries = 0; setNet('online'); });
+  pr.on('connection', c => {
+    c.on('data', m => hostRecv(c, m));
+    c.on('close', () => hostDrop(c));
+    c.on('error', () => hostDrop(c));
+  });
+  pr.on('disconnected', () => { if (pr !== peer) return; setNet('connecting'); setTimeout(() => { if (pr === peer && !pr.destroyed) pr.reconnect(); }, 2000); });
+  pr.on('error', e => {
+    if (pr !== peer) return;
+    console.warn('peer error', e.type, e);
+    if (e.type === 'peer-unavailable') return;
+    if (e.type === 'unavailable-id') {
+      pr.destroy();
+      const fresh = !room.game && room.members.every(m => m.bot || m.pid === room.host);
+      if (fresh) room.code = genCode();
+      setTimeout(() => { if (MODE === 'host') { startHostPeer(); sync(); } }, fresh ? 100 : 3000);
+      return;
+    }
+    if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(e.type)) {
+      setNet('offline'); pr.destroy();
+      setTimeout(() => { if (MODE === 'host' && pr === peer) startHostPeer(); }, Math.min(15000, 2000 * ++hostPeerTries));
+    }
+  });
+}
+function hostRecv(c, msg) {
+  if (!msg || typeof msg !== 'object' || MODE !== 'host') return;
+  if (msg.t === 'join') {
+    let m = msg.token && room.members.find(x => x.token === msg.token && !x.bot);
+    if (!m) {
+      if (room.game) return c.send({t:'err', msg:'Игра уже началась', fatal:true});
+      if (room.members.length >= 8) return c.send({t:'err', msg:'Комната заполнена (максимум 8)', fatal:true});
+      m = {pid:'g' + rndId(6), name:cleanName(msg.name), color:freeColor(), bot:false, token:String(msg.token || rndId()), connected:true};
+      room.members.push(m);
+      sysChat(`${m.name} заходит в комнату`);
+    }
+    const old = conns.get(m.pid);
+    if (old && old !== c) { old.pid = null; try { old.close(); } catch (e) {} }
+    c.pid = m.pid; conns.set(m.pid, c); m.connected = true; m.discAt = 0; m.left = false;
+    c.send({t:'welcome', pid:m.pid});
+    sync(); return;
+  }
+  if (!c.pid) return;
+  if (msg.t === 'act') { const e = doAct(c.pid, msg.a, msg.d); if (e) c.send({t:'err', msg:e}); }
+  else if (msg.t === 'chat') addChat(c.pid, msg.text);
+  else if (msg.t === 'leave') memberLeave(c.pid);
+}
+function hostDrop(c) {
+  if (!c.pid || conns.get(c.pid) !== c) return;
+  conns.delete(c.pid);
+  const m = mem(c.pid); if (m) { m.connected = false; m.discAt = Date.now(); }
+  sync();
+}
+function doAct(pid, a, d) {
+  if (!room.game) return 'Игра ещё не началась';
+  try { room.game.act(pid, String(a), d && typeof d === 'object' ? d : {}); lastAct = Date.now(); sync(); return null; }
+  catch (e) { if (!(e instanceof GErr)) console.error(e); return e.message || 'Ошибка'; }
+}
+function sysChat(t) { room.chat.push({id:rndId(6), n:'', c:'#888', t}); if (room.chat.length > 60) room.chat.shift(); }
+function addChat(pid, text) {
+  text = String(text || '').trim().slice(0, 200); if (!text) return;
+  const m = mem(pid);
+  room.chat.push({id:rndId(6), n:m ? m.name : '?', c:m ? m.color : '#888', t:text});
+  if (room.chat.length > 60) room.chat.shift();
+  sync();
+}
+function memberLeave(pid) {
+  const m = mem(pid); if (!m) return;
+  const c = conns.get(pid); conns.delete(pid); if (c) { c.pid = null; setTimeout(() => { try { c.close(); } catch (e) {} }, 300); }
+  if (!room.game) { room.members = room.members.filter(x => x !== m); sysChat(`${m.name} покидает комнату`); }
+  else {
+    m.left = true; m.connected = false;
+    const p = room.game.P(pid);
+    if (p && !p.out && room.game.phase !== 'over') { try { room.game.act(pid, 'surrender'); } catch (e) {} }
+  }
+  sync();
+}
+function hostAddBot() {
+  if (room.game || room.members.length >= 8) return;
+  const used = new Set(room.members.map(m => m.name));
+  const nm = 'Бот ' + (BOT_NAMES.find(n => !used.has('Бот ' + n)) || rndId(2));
+  room.members.push({pid:'b' + rndId(6), name:nm, color:freeColor(), bot:true, connected:true});
+  sync();
+}
+function hostKick(pid) {
+  if (room.game || pid === room.host) return;
+  const c = conns.get(pid);
+  if (c) { c.pid = null; try { c.send({t:'kicked'}); } catch (e) {} setTimeout(() => { try { c.close(); } catch (e) {} }, 300); conns.delete(pid); }
+  room.members = room.members.filter(m => m.pid !== pid);
+  sync();
+}
+function hostStart() {
+  if (room.game) return;
+  room.members = room.members.filter(m => m.bot || m.connected || m.pid === room.host);
+  if (room.members.length < 2) return toast('Нужно минимум 2 игрока — добавьте бота или пригласите друзей', true);
+  room.game = new Game(room.members, {money:room.money});
+  lastAct = Date.now();
+  sync();
+}
+function hostNewGame() {
+  room.game = null;
+  room.members = room.members.filter(m => m.bot || m.connected || m.pid === room.host);
+  sync();
+}
+function makeView() {
+  return {
+    room:{code:room.code, host:room.host, money:room.money, offline:!!room.offline,
+      members:room.members.map(m => ({pid:m.pid, name:m.name, color:m.color, bot:m.bot, connected:m.connected, left:!!m.left}))},
+    chat:room.chat,
+    game:room.game ? room.game.pub() : null,
+  };
+}
+function sync() {
+  if (MODE !== 'host') return;
+  const v = makeView();
+  for (const c of conns.values()) if (c.open) { try { c.send({t:'state', s:v}); } catch (e) {} }
+  store.set('mgnt_host', {...room, game:room.game ? JSON.parse(JSON.stringify(room.game)) : null, savedAt:Date.now()});
+  onState(v);
+}
+// bots & autopilot
+setInterval(() => {
+  if (MODE !== 'host' || !room || !room.game) return;
+  const g = room.game; if (g.phase === 'over') return;
+  const now = Date.now();
+  for (const t of g.trades) {
+    const m = mem(t.to);
+    if (m && m.bot && now - t.ts > 1500) {
+      try { g.act(t.to, botTrade(g, t) ? 'accept' : 'reject', {id:t.id}); } catch (e) { g.trades = g.trades.filter(x => x !== t); }
+      sync(); return;
+    }
+  }
+  const cp = g.curP(), m = mem(cp.pid);
+  const auto = !m || m.bot || m.left || (!m.connected && now - (m.discAt || 0) > 30000);
+  if (!auto || now - lastAct < 850) return;
+  const ac = botAct(g, cp.pid, m && m.bot); if (!ac) return;
+  try { g.act(cp.pid, ac[0], ac[1] || {}); }
+  catch (e) { console.warn('bot', ac, e.message); try { g.act(cp.pid, g.phase === 'debt' ? 'bankrupt' : 'end'); } catch (e2) {} }
+  lastAct = now; sync();
+}, 250);
+
+// ======================= GUEST =======================
+let conn = null, G = {code:null, name:null, token:null}, rcTimer = null, everJoined = false, connTimer = null;
+function guestJoin(code, name) {
+  code = String(code || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{5}$/.test(code)) return toast('Введите код комнаты из 5 символов', true);
+  if (typeof Peer === 'undefined') return toast('Не удалось загрузить сетевой модуль. Проверьте интернет и обновите страницу', true);
+  const sv = store.get('mgnt_guest');
+  G = {code, name:cleanName(name), token:sv && sv.code === code ? sv.token : rndId()};
+  store.set('mgnt_guest', {code, token:G.token, name:G.name, at:Date.now()});
+  MODE = 'guest'; everJoined = false;
+  setNet('connecting'); toast('Подключаемся к комнате ' + code + '…');
+  peer = new Peer(peerOpts());
+  const pr = peer;
+  pr.on('open', () => guestConnect());
+  pr.on('disconnected', () => setTimeout(() => { if (pr === peer && !pr.destroyed) pr.reconnect(); }, 1500));
+  pr.on('error', e => {
+    if (pr !== peer) return;
+    console.warn('peer error', e.type, e);
+    if (e.type === 'peer-unavailable') {
+      if (!everJoined) { toast('Комната не найдена. Проверьте код', true); guestReset(); }
+      else scheduleReconnect();
+    } else if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(e.type)) { setNet('offline'); scheduleReconnect(); }
+  });
+}
+function guestConnect() {
+  if (MODE !== 'guest' || !peer || peer.destroyed) return;
+  if (conn) { const o = conn; conn = null; try { o.close(); } catch (e) {} }
+  setNet('connecting');
+  const c = conn = peer.connect(PREFIX + G.code, {reliable:true, serialization:'json'});
+  clearTimeout(connTimer);
+  connTimer = setTimeout(() => { if (conn === c && !c.open) { if (!everJoined) toast('Не удаётся подключиться, пробуем ещё…', true); scheduleReconnect(true); } }, 12000);
+  c.on('open', () => { setNet('online'); c.send({t:'join', name:G.name, token:G.token}); });
+  c.on('data', guestRecv);
+  c.on('close', () => { if (conn === c) { setNet('connecting'); scheduleReconnect(); } });
+  c.on('error', () => { if (conn === c) scheduleReconnect(); });
+}
+function scheduleReconnect(now) {
+  if (rcTimer || MODE !== 'guest') return;
+  rcTimer = setTimeout(() => {
+    rcTimer = null;
+    if (MODE !== 'guest' || !peer) return;
+    if (peer.destroyed) { guestJoin(G.code, G.name); return; }
+    if (peer.disconnected) { peer.reconnect(); setTimeout(guestConnect, 1000); return; }
+    if (!conn || !conn.open) guestConnect();
+  }, now ? 200 : 3000);
+}
+function guestRecv(m) {
+  if (!m || typeof m !== 'object') return;
+  if (m.t === 'welcome') { ME = m.pid; everJoined = true; }
+  else if (m.t === 'state') { everJoined = true; onState(m.s); }
+  else if (m.t === 'err') { toast(m.msg, true); if (m.fatal) { store.del('mgnt_guest'); guestReset(); } }
+  else if (m.t === 'kicked') { toast('Вас удалили из комнаты', true); store.del('mgnt_guest'); guestReset(); }
+  else if (m.t === 'closed') { toast('Создатель закрыл комнату', true); store.del('mgnt_guest'); guestReset(); }
+}
+function guestReset() {
+  MODE = null; ME = null; S = null;
+  const c = conn; conn = null; try { c && c.close(); } catch (e) {}
+  const p = peer; peer = null; try { p && p.destroy(); } catch (e) {}
+  $('#net').classList.add('hidden');
+  render();
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (MODE === 'guest' && (!conn || !conn.open)) scheduleReconnect(true);
+  if (MODE === 'host' && peer && peer.disconnected && !peer.destroyed) peer.reconnect();
+});
+
+// ======================= ACTIONS (both modes) =======================
+function send(a, d) {
+  if (MODE === 'host') { const e = doAct(ME, a, d); if (e) toast(e, true); }
+  else if (conn && conn.open) conn.send({t:'act', a, d});
+  else toast('Нет соединения с комнатой', true);
+}
+function sendChat(inp) {
+  const t = inp.value.trim(); if (!t) return; inp.value = '';
+  if (MODE === 'host') addChat(ME, t); else if (conn && conn.open) conn.send({t:'chat', text:t});
+}
+function leave() {
+  if (MODE === 'host') {
+    if (!confirm('Закрыть комнату? Игра закончится для всех.')) return;
+    for (const c of conns.values()) { try { c.send({t:'closed'}); } catch (e) {} }
+    store.del('mgnt_host');
+    setTimeout(() => { const p = peer; peer = null; try { p && p.destroy(); } catch (e) {} }, 400);
+    conns.clear(); MODE = null; room = null; S = null; ME = null; $('#net').classList.add('hidden'); render();
+  } else if (MODE === 'guest') {
+    if (S && S.game && S.game.phase !== 'over' && !confirm('Выйти из игры? Вы будете считаться сдавшимся.')) return;
+    try { conn && conn.open && conn.send({t:'leave'}); } catch (e) {}
+    store.del('mgnt_guest');
+    setTimeout(guestReset, 300);
+  }
+}
+
+// ======================= RENDER =======================
+function show(id) {
+  for (const s of ['lobby', 'wait', 'game']) $('#' + s).classList.toggle('hidden', s !== id);
+  const n = $('#net'), inGame = id === 'game';
+  if (inGame && n.parentElement !== $('#roomLbl').parentElement) $('#roomLbl').before(n);
+  if (!inGame && n.parentElement !== document.body) document.body.prepend(n);
+  n.classList.toggle('inline', inGame);
+}
+function onState(v) { S = v; render(); }
+function render() {
+  if (!S || !MODE) { show('lobby'); renderResume(); return; }
+  if (!S.game) { show('wait'); renderWait(); return; }
+  show('game'); renderGame();
+}
+function renderResume() {
+  const box = $('#resumeBox'), h = store.get('mgnt_host'), g = store.get('mgnt_guest');
+  let html = '';
+  if (h && h.members && Date.now() - (h.savedAt || 0) < 3 * 864e5 && !(h.game && h.game.phase === 'over'))
+    html += `<div class="row"><div style="flex:1">Ваша комната <b>${esc(h.code)}</b>${h.game ? ' (игра идёт)' : ''}</div><button class="pri sm" id="btnResH">Продолжить</button><button class="sm" id="btnDelH">✕</button></div>`;
+  if (g && g.code && Date.now() - (g.at || 0) < 3 * 864e5)
+    html += `<div class="row"><div style="flex:1">Вы были в комнате <b>${esc(g.code)}</b></div><button class="pri sm" id="btnResG">Вернуться</button><button class="sm" id="btnDelG">✕</button></div>`;
+  box.innerHTML = html; box.classList.toggle('hidden', !html);
+  if ($('#btnResH')) { $('#btnResH').onclick = () => hostCreate(null, h); $('#btnDelH').onclick = () => { store.del('mgnt_host'); renderResume(); }; }
+  if ($('#btnResG')) { $('#btnResG').onclick = () => guestJoin(g.code, g.name); $('#btnDelG').onclick = () => { store.del('mgnt_guest'); renderResume(); }; }
+}
+const isHost = () => MODE === 'host';
+const inviteLink = () => location.origin + location.pathname + '?room=' + S.room.code;
+function renderChat(el, chat) {
+  const key = chat.length + ':' + (chat.length ? chat[chat.length - 1].id : '');
+  if (el.dataset.key === key) return;
+  const atBottom = el.parentElement.scrollHeight - el.parentElement.scrollTop - el.parentElement.clientHeight < 40;
+  el.dataset.key = key;
+  el.innerHTML = chat.length ? chat.map(m => m.n ? `<div><b style="color:${m.c}">${esc(m.n)}:</b> ${esc(m.t)}</div>` : `<div class="muted">${esc(m.t)}</div>`).join('') : '<div class="muted">Сообщений пока нет</div>';
+  if (atBottom) el.parentElement.scrollTop = 1e9;
+}
+function renderWait() {
+  const r = S.room;
+  $('#wCode').textContent = r.offline ? 'ОФЛАЙН' : r.code;
+  $('#btnCopyCode').parentElement.classList.toggle('hidden', !!r.offline);
+  $('#wCount').textContent = `(${r.members.length}/8)`;
+  $('#wMembers').innerHTML = r.members.map(m => `<div class="mem"><span class="dot" style="background:${m.color}"></span><span class="nm">${esc(m.name)}${m.pid === ME ? ' <span class="muted">(вы)</span>' : ''}</span>
+    <span class="muted" style="font-size:12px">${m.pid === r.host ? '👑 создатель' : m.bot ? '🤖 бот' : m.connected ? '' : '⚠ нет связи'}</span>
+    ${isHost() && m.pid !== r.host ? `<button class="sm" data-kick="${m.pid}">✕</button>` : ''}</div>`).join('');
+  $('#wMembers').querySelectorAll('[data-kick]').forEach(b => b.onclick = () => hostKick(b.dataset.kick));
+  $('#wHost').classList.toggle('hidden', !isHost());
+  $('#wGuest').classList.toggle('hidden', isHost());
+  if (isHost()) { $('#selMoney').value = String(r.money); $('#btnBot').disabled = r.members.length >= 8; $('#btnStart').disabled = r.members.length < 2; }
+  renderChat($('#wChat'), S.chat || []);
+}
+
+// ---------- board ----------
+const TOTAL = 12.2;
+function cellRC(i) { if (i <= 10) return [10, 10 - i]; if (i <= 20) return [10 - (i - 10), 0]; if (i <= 30) return [0, i - 20]; return [i - 30, 10]; }
+function edge(k) { return k === 0 ? 0 : 1.6 + (k - 1); }
+function span(k) { return k === 0 || k === 10 ? 1.6 : 1; }
+function cellCenter(i) { const [r, c] = cellRC(i); return [(edge(c) + span(c) / 2) / TOTAL * 100, (edge(r) + span(r) / 2) / TOTAL * 100]; }
+const kfmt = n => n >= 1000 ? (n / 1000).toString().replace('.', ',') + 'к' : String(n);
+let boardBuilt = false, disp = {}, animT = {}, lastCardSeq = null, lastRolls = null, wasMyTurn = false, seenTrades = null, cardTimer = null;
+function buildBoard() {
+  const b = $('#board'); b.innerHTML = '';
+  BOARD.forEach(c => {
+    const [r, col] = cellRC(c.id), d = document.createElement('div');
+    d.className = 'cell ' + (c.id % 10 === 0 ? 'corner' : 's' + Math.floor(c.id / 10));
+    d.style.gridRow = r + 1; d.style.gridColumn = col + 1; d.id = 'c' + c.id; d.title = c.n;
+    if (c.id % 10 === 0) d.innerHTML = `<div class="ic">${c.icon}</div><div>${c.id === 10 ? 'Тюрьма' : c.n}</div>`;
+    else if (c.type === 'prop') d.innerHTML = `<div class="bar" style="background:${GROUPS[c.g].c}"></div><div class="ct"><div class="nm">${c.s}</div><div class="pr">${kfmt(c.price)}</div></div>`;
+    else d.innerHTML = `<div class="ct"><div class="ic">${c.icon}</div><div class="nm">${c.s || c.n}</div><div class="pr">${c.price ? kfmt(c.price) : c.amt ? '−' + kfmt(c.amt) : ''}</div></div>`;
+    d.onclick = () => openCell(c.id);
+    b.appendChild(d);
+  });
+  const mid = document.createElement('div'); mid.className = 'mid';
+  mid.innerHTML = `<div class="title">МАГ<span>НАТ</span></div><div class="dice"><div class="die" id="d1"></div><div class="die" id="d2"></div></div><div class="status" id="status"></div><div class="acts" id="acts"></div><div class="cardpop" id="cardpop"><h4></h4><p></p></div>`;
+  b.appendChild(mid);
+  const t = document.createElement('div'); t.className = 'tokens'; t.id = 'tokens'; b.appendChild(t);
+  boardBuilt = true;
+}
+const PIPS = {1:[4], 2:[0, 8], 3:[0, 4, 8], 4:[0, 2, 6, 8], 5:[0, 2, 4, 6, 8], 6:[0, 2, 3, 5, 6, 8]};
+function drawDie(el, n) { el.innerHTML = range(9).map(i => `<i class="${PIPS[n].includes(i) ? 'on' : ''}"></i>`).join(''); }
+function placeTokens(g) {
+  const box = $('#tokens'), alive = g.players.filter(p => !p.out);
+  for (const el of [...box.children]) if (!alive.some(p => 't_' + p.pid === el.id)) el.remove();
+  const byCell = {};
+  alive.forEach(p => (byCell[disp[p.pid]] = byCell[disp[p.pid]] || []).push(p));
+  for (const p of alive) {
+    let el = document.getElementById('t_' + p.pid);
+    if (!el) { el = document.createElement('div'); el.className = 'tok'; el.id = 't_' + p.pid; box.appendChild(el); }
+    el.style.background = p.color; el.textContent = p.name.replace(/^Бот /, '')[0] || '?';
+    el.classList.toggle('cur', g.players[g.cur].pid === p.pid && g.phase !== 'over');
+    const list = byCell[disp[p.pid]], k = list.indexOf(p), n = list.length;
+    const [x, y] = cellCenter(disp[p.pid]);
+    const cols = Math.min(n, 3), rows = Math.ceil(n / 3);
+    el.style.left = (x + ((k % 3) - (cols - 1) / 2) * 2.6) + '%';
+    el.style.top = (y + (Math.floor(k / 3) - (rows - 1) / 2) * 2.6) + '%';
+  }
+}
+function moveTokens(g) {
+  for (const p of g.players) {
+    if (p.out) continue;
+    if (disp[p.pid] == null) { disp[p.pid] = p.pos; continue; }
+    if (disp[p.pid] === p.pos) continue;
+    const dist = (p.pos - disp[p.pid] + 40) % 40;
+    clearTimeout(animT[p.pid]);
+    if (dist > 12 || p.jail) { disp[p.pid] = p.pos; continue; }
+    const step = () => {
+      const gg = S && S.game; if (!gg) return;
+      const tgt = (gg.players.find(x => x.pid === p.pid) || p).pos;
+      if (disp[p.pid] === tgt) return;
+      disp[p.pid] = (disp[p.pid] + 1) % 40; placeTokens(gg);
+      if (disp[p.pid] !== tgt) animT[p.pid] = setTimeout(step, 170);
+    };
+    animT[p.pid] = setTimeout(step, 0);
+  }
+  placeTokens(g);
+}
+function updateCells(g) {
+  for (const id in g.props) {
+    const s = g.props[id], el = document.getElementById('c' + id), o = s.o && g.players.find(p => p.pid === s.o);
+    el.classList.toggle('owned', !!o); el.style.setProperty('--oc', o ? o.color : 'transparent');
+    el.classList.toggle('mort', !!s.m);
+    const bar = el.querySelector('.bar');
+    if (bar) { const html = s.h === 5 ? '<i class="ht"></i>' : '<i class="hs"></i>'.repeat(s.h); if (bar.dataset.h !== html) { bar.innerHTML = html; bar.dataset.h = html; } }
+  }
+  document.querySelectorAll('.cell.here').forEach(e => e.classList.remove('here'));
+  if (g.phase !== 'over') { const c = document.getElementById('c' + g.curP().pos); c && c.classList.add('here'); }
+}
+function actionsHTML(g) {
+  const me = g.players.find(p => p.pid === ME), cp = g.curP();
+  if (g.phase === 'over') {
+    const w = g.players.find(p => p.pid === g.winner);
+    return `<div class="info winner">🏆 Победитель: ${esc(w ? w.name : '—')}</div>` + (isHost() ? `<button class="pri" data-a="newgame">🔄 Новая игра</button>` : '') + `<button data-a="leave">← В меню</button>`;
+  }
+  if (!me || me.out) return `<div class="info">Вы выбыли. Ходит ${esc(cp.name)}…</div>`;
+  if (cp.pid !== ME) return `<div class="info">Ходит <b style="color:${cp.color}">${esc(cp.name)}</b>…</div>`;
+  if (g.phase === 'roll') {
+    if (me.jail) return `<div class="info">🔒 Вы в тюрьме (попытка ${me.jt + 1}/3)</div><button class="pri" data-a="roll">🎲 Бросить на дубль</button><button data-a="payjail" ${me.money < FINE ? 'disabled' : ''}>Заплатить ${fmt(FINE)}</button>${me.cards ? `<button data-a="usecard">🎫 Карта (${me.cards})</button>` : ''}`;
+    return `<button class="pri" data-a="roll">🎲 ${g.again ? 'Бросить ещё раз (дубль)' : 'Бросить кубики'}</button>`;
+  }
+  if (g.phase === 'buy') {
+    const c = BOARD[g.pend];
+    return `<div class="info">Купить <b>${esc(c.n)}</b> за ${fmt(c.price)}?</div><button class="pri" data-a="buy" ${me.money < c.price ? 'disabled' : ''}>✅ Купить</button><button data-a="decline">Отказаться</button><button class="sm" data-cell="${c.id}">ℹ</button>`;
+  }
+  if (g.phase === 'debt') {
+    const tot = g.debts.reduce((s, d) => s + d.amt, 0);
+    return `<div class="info">💸 Нужно заплатить <b>${fmt(tot)}</b>. Продайте постройки или заложите имущество (вкладка «Активы»).</div><button class="pri" data-a="paydebt" ${me.money < tot ? 'disabled' : ''}>Оплатить</button><button class="bad" data-a="bankrupt">Банкротство</button>`;
+  }
+  if (g.phase === 'end') return `<button class="pri" data-a="end">✔ Завершить ход</button>`;
+  return '';
+}
+function bindActs(el) {
+  el.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
+    const a = b.dataset.a;
+    if (a === 'newgame') return hostNewGame();
+    if (a === 'leave') return MODE === 'host' ? leave() : (store.del('mgnt_guest'), guestReset());
+    if (a === 'bankrupt' && !confirm('Объявить банкротство? Вы выбываете из игры.')) return;
+    send(a);
+  });
+  el.querySelectorAll('[data-cell]').forEach(b => b.onclick = () => openCell(+b.dataset.cell));
+}
+let curTab = 'assets';
+$('#tabs').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return; curTab = b.dataset.t;
+  $('#tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  ['assets', 'trades', 'chat', 'log'].forEach(t => $('#t' + t[0].toUpperCase() + t.slice(1)).classList.toggle('hidden', t !== curTab));
+  if (curTab === 'chat') $('#tabbody').scrollTop = 1e9;
+};
+function renderGame() {
+  const g = Game.from(S.game);
+  if (!boardBuilt) buildBoard();
+  $('#roomLbl').textContent = S.room.offline ? 'Офлайн-игра' : 'Комната ' + S.room.code;
+  // dice
+  if (lastRolls !== g.rolls) {
+    drawDie($('#d1'), g.dice[0]); drawDie($('#d2'), g.dice[1]);
+    if (lastRolls != null) for (const d of ['#d1', '#d2']) { const el = $(d); el.classList.remove('roll'); void el.offsetWidth; el.classList.add('roll'); }
+    lastRolls = g.rolls;
+  }
+  updateCells(g); moveTokens(g);
+  const cp = g.curP();
+  $('#status').innerHTML = g.phase === 'over' ? 'Игра окончена' : `Ход ${g.turn}: <span style="color:${cp.color}">${esc(cp.name)}</span>`;
+  const ah = actionsHTML(g);
+  for (const el of [$('#acts'), $('#mActs')]) { if (el.dataset.h !== ah) { el.innerHTML = ah; el.dataset.h = ah; bindActs(el); } }
+  // card popup
+  if (g.card && lastCardSeq != null && g.card.seq !== lastCardSeq) {
+    const cpop = $('#cardpop'), who = g.players.find(p => p.pid === g.card.pid);
+    cpop.className = 'cardpop show ' + g.card.deck;
+    cpop.querySelector('h4').textContent = (g.card.deck === 'chance' ? '🍀 Удача' : '💼 Казна') + (who ? ' · ' + who.name : '');
+    cpop.querySelector('p').textContent = g.card.text;
+    clearTimeout(cardTimer); cardTimer = setTimeout(() => cpop.classList.remove('show'), 3800);
+  }
+  lastCardSeq = g.card ? g.card.seq : 0;
+  // my turn notification
+  const mine = g.phase !== 'over' && cp.pid === ME;
+  if (mine && !wasMyTurn) { buzz(150); if (document.hidden) document.title = '🔔 Ваш ход! — Магнат'; }
+  if (!mine) document.title = 'Магнат онлайн';
+  wasMyTurn = mine;
+  renderPlayers(g); renderAssets(g); renderTrades(g); renderLog(g);
+  renderChat($('#gChat'), S.chat || []);
+  $('#btnSurrender').classList.toggle('hidden', !g.players.some(p => p.pid === ME && !p.out) || g.phase === 'over');
+  if (!$('#modal').classList.contains('hidden') && modalRefresh) modalRefresh();
+}
+function renderPlayers(g) {
+  const cp = g.curP();
+  const html = g.players.map(p => {
+    const m = S.room.members.find(x => x.pid === p.pid) || {};
+    const n = g.owned(p.pid).length;
+    const tags = [p.jail ? '🔒' : '', p.cards ? '🎫' + p.cards : '', m.bot ? '🤖' : '', !m.bot && !m.connected && !p.out ? '📵' : '', p.pid === g.winner ? '🏆' : ''].join(' ');
+    return `<div class="pl ${p.pid === cp.pid && g.phase !== 'over' ? 'cur' : ''} ${p.out ? 'out' : ''}"><span class="dot" style="background:${p.color}"></span><span class="nm">${esc(p.name)}${p.pid === ME ? ' (вы)' : ''}</span><span class="tag">${tags}</span><span class="muted" style="font-size:12px">🏠${n}</span><span class="mn">${fmt(p.money)}</span></div>`;
+  }).join('');
+  if ($('#plist').dataset.h !== html) { $('#plist').innerHTML = html; $('#plist').dataset.h = html; }
+}
+function assetRow(g, id, withBtns) {
+  const c = BOARD[id], s = g.props[id], me = g.P(ME);
+  const col = c.g ? GROUPS[c.g].c : '#777';
+  const st = [s.h === 5 ? '🏨 отель' : s.h ? '🏠×' + s.h : '', s.m ? '🔻 в залоге' : '', 'аренда ' + (s.m ? '—' : fmt(g.rent(id)))].filter(Boolean).join(' · ');
+  let btns = '';
+  if (withBtns && me && !me.out && g.phase !== 'over') {
+    const B = (a, label, e) => `<button class="sm" data-act="${a}" data-id="${id}" ${e ? `disabled title="${esc(e)}"` : ''}>${label}</button>`;
+    if (c.type === 'prop' && g.hasGroup(ME, c.g)) { btns += B('build', '+🏠', g.canBuild(me, id)); if (s.h) btns += B('sell', '−🏠', g.canSell(me, id)); }
+    btns += s.m ? B('unmortgage', 'Выкуп ' + kfmt(g.umCost(id)), g.canUnmortgage(me, id)) : B('mortgage', 'Залог +' + kfmt(c.price / 2), g.canMortgage(me, id));
+  }
+  return `<div class="asset"><span class="sw" style="background:${col}"></span><span class="an" data-cell="${id}" style="cursor:pointer"><b>${esc(c.n)}</b><small>${st}</small></span>${btns}</div>`;
+}
+function bindAssetBtns(el) {
+  el.querySelectorAll('[data-act]').forEach(b => b.onclick = () => send(b.dataset.act, {cell:+b.dataset.id}));
+  el.querySelectorAll('[data-cell]').forEach(b => b.onclick = () => openCell(+b.dataset.cell));
+}
+function renderAssets(g) {
+  const ids = g.owned(ME).sort((a, b) => a - b);
+  const me = g.P(ME);
+  let html = me && me.out ? '<div class="muted">Вы выбыли из игры.</div>' : '';
+  html += ids.length ? ids.map(id => assetRow(g, id, true)).join('') : '<div class="muted">У вас пока нет собственности. Покупайте города, порты и предприятия, попадая на них.</div>';
+  html += '<div class="muted" style="font-size:12px;margin-top:8px">Дома можно строить, собрав все города одного цвета. Нажмите на клетку поля, чтобы увидеть подробности.</div>';
+  const el = $('#tAssets'); if (el.dataset.h !== html) { el.innerHTML = html; el.dataset.h = html; bindAssetBtns(el); }
+}
+function tradeText(g, t) {
+  const a = g.P(t.from), b = g.P(t.to);
+  const L = (ids, m) => [...ids.map(i => esc(BOARD[i].n)), m ? fmt(m) : ''].filter(Boolean).join(', ') || 'ничего';
+  return `<b style="color:${a.color}">${esc(a.name)}</b> отдаёт: ${L(t.give, t.gm)}<br><b style="color:${b.color}">${esc(b.name)}</b> отдаёт: ${L(t.get, t.tm)}`;
+}
+function renderTrades(g) {
+  const me = g.P(ME), canTrade = me && !me.out && g.phase !== 'over';
+  const inc = g.trades.filter(t => t.to === ME), out = g.trades.filter(t => t.from === ME), oth = g.trades.filter(t => t.to !== ME && t.from !== ME);
+  if (seenTrades) for (const t of inc) if (!seenTrades.has(t.id)) { toast(`🤝 ${g.P(t.from).name} предлагает вам сделку`); buzz([80, 60, 80]); }
+  seenTrades = new Set(g.trades.map(t => t.id));
+  let html = canTrade ? `<button class="pri" id="btnNewTrade" style="width:100%;margin-bottom:10px">➕ Предложить сделку</button>` : '';
+  if (inc.length) html += '<h3>Вам предлагают</h3>' + inc.map(t => `<div class="trade">${tradeText(g, t)}<div class="row" style="margin-top:6px"><button class="sm pri" data-tr="accept" data-id="${t.id}">Принять</button><button class="sm" data-tr="reject" data-id="${t.id}">Отклонить</button></div></div>`).join('');
+  if (out.length) html += '<h3>Ваши предложения</h3>' + out.map(t => `<div class="trade">${tradeText(g, t)}<div class="row" style="margin-top:6px"><button class="sm" data-tr="cancel" data-id="${t.id}">Отозвать</button></div></div>`).join('');
+  if (oth.length) html += '<h3>Другие сделки</h3>' + oth.map(t => `<div class="trade">${tradeText(g, t)}</div>`).join('');
+  if (!g.trades.length) html += '<div class="muted">Активных сделок нет. Обменивайтесь городами, чтобы собрать цветовые группы!</div>';
+  const el = $('#tTrades');
+  if (el.dataset.h !== html) {
+    el.innerHTML = html; el.dataset.h = html;
+    if ($('#btnNewTrade')) $('#btnNewTrade').onclick = () => openTrade();
+    el.querySelectorAll('[data-tr]').forEach(b => b.onclick = () => send(b.dataset.tr, {id:+b.dataset.id}));
+  }
+  const tb = $('#tabs [data-t=trades]'); tb.textContent = '🤝 Сделки' + (inc.length ? ` (${inc.length})` : '');
+}
+function renderLog(g) {
+  const key = g.lseq; const el = $('#tLog'); if (el.dataset.k == key) return; el.dataset.k = key;
+  el.innerHTML = g.log.slice().reverse().map(l => `<div>${esc(l.m)}</div>`).join('');
+}
+
+// ---------- modals ----------
+let modalRefresh = null;
+function openModal(html, refresh) {
+  $('#mbox').innerHTML = '<button class="x sm" id="mx">✕</button>' + html;
+  $('#modal').classList.remove('hidden');
+  $('#mx').onclick = closeModal;
+  modalRefresh = refresh || null;
+}
+function closeModal() { $('#modal').classList.add('hidden'); modalRefresh = null; }
+$('#modal').onclick = e => { if (e.target.id === 'modal') closeModal(); };
+function openCell(id) {
+  const draw = () => {
+    if (!S || !S.game) return closeModal();
+    const g = Game.from(S.game), c = BOARD[id], s = g.props[id];
+    let html = '';
+    if (c.type === 'prop') {
+      const gr = GROUPS[c.g];
+      html = `<div class="pcard"><div class="hd" style="background:${gr.c}">${esc(c.n)}</div><table>
+        <tr><td>Аренда</td><td>${fmt(c.rent[0])}</td></tr><tr><td>Вся группа цвета</td><td>${fmt(c.rent[0] * 2)}</td></tr>
+        ${[1, 2, 3, 4].map(h => `<tr><td>С ${h} ${h === 1 ? 'домом' : 'домами'}</td><td>${fmt(c.rent[h])}</td></tr>`).join('')}
+        <tr><td>С отелем</td><td>${fmt(c.rent[5])}</td></tr>
+        <tr><td>Цена</td><td>${fmt(c.price)}</td></tr><tr><td>Дом / отель</td><td>${fmt(gr.h)}</td></tr><tr><td>Залог</td><td>${fmt(c.price / 2)}</td></tr></table></div>`;
+    } else if (c.type === 'port') {
+      html = `<div class="pcard"><div class="hd" style="background:#34495e">⚓ ${esc(c.n)}</div><table>${PORT_RENT.map((r, i) => `<tr><td>Аренда при ${i + 1} ${i ? 'портах' : 'порте'}</td><td>${fmt(r)}</td></tr>`).join('')}<tr><td>Цена</td><td>${fmt(c.price)}</td></tr><tr><td>Залог</td><td>${fmt(c.price / 2)}</td></tr></table></div>`;
+    } else if (c.type === 'util') {
+      html = `<div class="pcard"><div class="hd" style="background:#7f8c8d">${c.icon} ${esc(c.n)}</div><table><tr><td>Одно предприятие</td><td>сумма кубиков × 40</td></tr><tr><td>Оба предприятия</td><td>сумма кубиков × 100</td></tr><tr><td>Цена</td><td>${fmt(c.price)}</td></tr><tr><td>Залог</td><td>${fmt(c.price / 2)}</td></tr></table></div>`;
+    } else {
+      const d = {start:`Каждый раз, проходя «Старт», вы получаете ${fmt(PASS)}.`, jail:`Если вы просто проходите мимо — ничего не происходит. Выйти из тюрьмы: дубль, штраф ${fmt(FINE)} или карта освобождения.`,
+        free:'Здесь можно спокойно отдохнуть.', gotojail:'Отправляйтесь прямо в тюрьму, не проходя «Старт».', chance:'Возьмите карту «Удача».', chest:'Возьмите карту «Казна».', tax:`Заплатите банку ${fmt(c.amt || 0)}.`}[c.type];
+      html = `<h2>${c.icon} ${esc(c.n)}</h2><p>${d}</p>`;
+    }
+    if (s) {
+      const o = s.o && g.P(s.o);
+      html += `<p>Владелец: ${o ? `<b style="color:${o.color}">${esc(o.name)}</b>` : 'банк (свободно)'}${s.h ? ` · ${s.h === 5 ? 'отель' : 'домов: ' + s.h}` : ''}${s.m ? ' · <b style="color:#e74c3c">в залоге</b>' : ''}</p>`;
+      if (o) html += `<p>Текущая аренда: <b>${s.m ? '—' : c.type === 'util' ? 'кубики × ' + (g.rent(id) / (g.dice[0] + g.dice[1])) : fmt(g.rent(id))}</b></p>`;
+      if (s.o === ME) html += `<div id="cellAsset">${assetRow(g, id, true)}</div>`;
+      else if (o && o.pid !== ME && g.P(ME) && !g.P(ME).out && g.phase !== 'over') html += `<button id="btnAskTrade">🤝 Предложить сделку игроку ${esc(o.name)}</button>`;
+    }
+    return html;
+  };
+  const html = draw(); if (html == null) return;
+  const bind = () => { const a = $('#cellAsset'); if (a) bindAssetBtns(a); const t = $('#btnAskTrade'); if (t) t.onclick = () => { const g = Game.from(S.game); openTrade(g.props[id].o, [id]); }; };
+  openModal(html, () => { const h = draw(); if (h == null) return; $('#mbox').innerHTML = '<button class="x sm" id="mx">✕</button>' + h; $('#mx').onclick = closeModal; bind(); });
+  bind();
+}
+function openTrade(to, preGet) {
+  const g0 = Game.from(S.game);
+  const others = g0.alive().filter(p => p.pid !== ME);
+  if (!others.length) return toast('Не с кем торговать', true);
+  let sel = {to:to || others[0].pid, give:new Set(), get:new Set(preGet || []), gm:0, tm:0};
+  const tradable = (g, id) => { const c = BOARD[id]; return !(c.type === 'prop' && g.grp(c.g).some(i => g.props[i].h)); };
+  const col = (g, pid, set, key) => {
+    const ids = g.owned(pid).filter(id => tradable(g, id)).sort((a, b) => a - b);
+    return ids.length ? ids.map(id => { const c = BOARD[id]; return `<label><input type="checkbox" data-k="${key}" value="${id}" ${set.has(id) ? 'checked' : ''}><span class="dot" style="background:${c.g ? GROUPS[c.g].c : '#777'}"></span>${esc(c.n)}${g.props[id].m ? ' (залог)' : ''}</label>`; }).join('') : '<div class="muted">Нет объектов для обмена</div>';
+  };
+  const draw = () => {
+    const g = Game.from(S.game), me = g.P(ME), them = g.P(sel.to);
+    if (!me || me.out || !them || them.out) { closeModal(); return; }
+    openModal(`<h2>🤝 Новая сделка</h2>
+      <div class="row" style="margin-bottom:10px">С кем: <select id="trTo">${g.alive().filter(p => p.pid !== ME).map(p => `<option value="${p.pid}" ${p.pid === sel.to ? 'selected' : ''}>${esc(p.name)} (${fmt(p.money)})</option>`).join('')}</select></div>
+      <div class="tcols"><div class="tcol"><b>Вы отдаёте</b>${col(g, ME, sel.give, 'give')}<input type="number" id="trGm" min="0" step="100" max="${me.money}" placeholder="+ деньги (у вас ${fmt(me.money)})" value="${sel.gm || ''}"></div>
+      <div class="tcol"><b>Вы получаете</b>${col(g, sel.to, sel.get, 'get')}<input type="number" id="trTm" min="0" step="100" max="${them.money}" placeholder="+ деньги (у игрока ${fmt(them.money)})" value="${sel.tm || ''}"></div></div>
+      <button class="pri" id="trSend" style="width:100%;margin-top:12px">Отправить предложение</button>`);
+    $('#trTo').onchange = e => { sel.to = e.target.value; sel.get = new Set(); sel.tm = 0; draw(); };
+    $('#mbox').querySelectorAll('input[type=checkbox]').forEach(ch => ch.onchange = () => { const s = sel[ch.dataset.k], v = +ch.value; ch.checked ? s.add(v) : s.delete(v); });
+    $('#trGm').oninput = e => sel.gm = Math.max(0, Math.floor(+e.target.value || 0));
+    $('#trTm').oninput = e => sel.tm = Math.max(0, Math.floor(+e.target.value || 0));
+    $('#trSend').onclick = () => {
+      if (!sel.give.size && !sel.get.size) return toast('Добавьте в сделку хотя бы один объект', true);
+      send('offer', {to:sel.to, give:[...sel.give], get:[...sel.get], gm:sel.gm, tm:sel.tm});
+      closeModal(); toast('Предложение отправлено');
+    };
+  };
+  draw();
+}
+
+// ---------- lobby bindings ----------
+const nameInp = $('#nameInp');
+nameInp.value = (store.get('mgnt_name') || '');
+const getName = () => { const n = nameInp.value.trim(); if (!n) { toast('Введите имя', true); nameInp.focus(); return null; } store.set('mgnt_name', n); return n; };
+$('#btnCreate').onclick = () => { const n = getName(); if (n) { store.del('mgnt_host'); hostCreate(n, null, false); } };
+$('#btnSolo').onclick = () => { const n = getName(); if (!n) return; store.del('mgnt_host'); hostCreate(n, null, true); hostAddBot(); hostAddBot(); hostAddBot(); };
+$('#btnJoin').onclick = () => { const n = getName(); if (n) guestJoin($('#codeInp').value, n); };
+$('#codeInp').onkeydown = e => { if (e.key === 'Enter') $('#btnJoin').click(); };
+if (QS.get('room')) $('#codeInp').value = QS.get('room').toUpperCase().slice(0, 5);
+$('#btnBot').onclick = hostAddBot;
+$('#btnStart').onclick = hostStart;
+$('#selMoney').onchange = e => { room.money = +e.target.value; sync(); };
+$('#btnLeaveWait').onclick = leave;
+$('#btnLeaveGame').onclick = () => { if (S && S.game && S.game.phase === 'over' && MODE === 'guest') { store.del('mgnt_guest'); guestReset(); } else leave(); };
+$('#btnSurrender').onclick = () => { if (confirm('Сдаться? Ваше имущество вернётся банку.')) send('surrender'); };
+const copy = t => { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Скопировано'), () => prompt('Скопируйте:', t)); };
+$('#btnCopyCode').onclick = () => copy(S.room.code);
+$('#btnCopyLink').onclick = () => {
+  const link = inviteLink();
+  if (navigator.share) navigator.share({title:'Магнат', text:'Играем в Магната! Код комнаты: ' + S.room.code, url:link}).catch(() => {});
+  else copy(link);
+};
+for (const [i, b] of [['#wChatInp', '#wChatBtn'], ['#gChatInp', '#gChatBtn']]) {
+  $(b).onclick = () => sendChat($(i));
+  $(i).onkeydown = e => { if (e.key === 'Enter') sendChat($(i)); };
+}
+window.addEventListener('beforeunload', e => { if (MODE === 'host' && room && room.game && room.game.phase !== 'over' && !room.offline) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('resize', () => { if (S && S.game) placeTokens(S.game); });
+render();
+</script>
+<script>
+// Load PeerJS (WebRTC) with CDN fallbacks; the UI above works without it in offline mode.
+(function load(urls) {
+  if (!urls.length) { console.warn('PeerJS не загружен'); return; }
+  const s = document.createElement('script'); s.src = urls[0];
+  s.onerror = () => { s.remove(); load(urls.slice(1)); };
+  document.head.appendChild(s);
+})(['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js']);
+</script>
+</body>
+</html>

@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>КЛИНОК — барбершоп в Санкт-Петербурге</title>
+  <meta name="description" content="Барбершоп КЛИНОК: мужские стрижки, фейды, моделирование бороды и королевское бритьё на Рубинштейна, 17. Запись онлайн 10:00–22:00.">
+  <meta name="theme-color" content="#0e0d0c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ff3d2e'/%3E%3Ctext x='32' y='44' font-family='Arial Black,Arial' font-weight='900' font-size='34' text-anchor='middle' fill='%230e0d0c'%3EК%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="is-loading">
+
+  <!-- ===== Прелоадер ===== -->
+  <div class="preloader" aria-hidden="true">
+    <div class="preloader__inner">
+      <svg class="preloader__scissors" viewBox="0 0 100 100">
+        <g class="blade blade--top"><circle cx="22" cy="30" r="12"/><path d="M32 36 L88 62"/></g>
+        <g class="blade blade--bottom"><circle cx="22" cy="70" r="12"/><path d="M32 64 L88 38"/></g>
+      </svg>
+      <div class="preloader__count"><span data-count>0</span>%</div>
+      <div class="preloader__word">КЛИНОК</div>
+    </div>
+    <div class="preloader__curtain"></div>
+  </div>
+
+  <div class="scroll-progress" aria-hidden="true"></div>
+  <div class="cursor" aria-hidden="true"><span class="cursor__label"></span></div>
+  <div class="cursor-dot" aria-hidden="true"></div>
+
+  <!-- ===== Шапка ===== -->
+  <header class="header">
+    <a href="#top" class="logo" aria-label="КЛИНОК — на главную">
+      <span class="logo__pole" aria-hidden="true"></span>
+      <span class="logo__text">КЛИНОК</span>
+    </a>
+    <nav class="nav" aria-label="Основное меню">
+      <a href="#services" class="nav__link"><span data-text="Услуги">Услуги</span></a>
+      <a href="#masters" class="nav__link"><span data-text="Мастера">Мастера</span></a>
+      <a href="#process" class="nav__link"><span data-text="Ритуал">Ритуал</span></a>
+      <a href="#reviews" class="nav__link"><span data-text="Отзывы">Отзывы</span></a>
+      <a href="#contacts" class="nav__link"><span data-text="Контакты">Контакты</span></a>
+    </nav>
+    <a href="#booking" class="btn btn--small header__cta magnetic" data-cursor="Go">Записаться</a>
+    <button class="burger" aria-label="Открыть меню" aria-expanded="false" aria-controls="mobile-menu">
+      <span></span><span></span>
+    </button>
+  </header>
+
+  <!-- ===== Мобильное меню ===== -->
+  <div class="mobile-menu" id="mobile-menu" aria-hidden="true">
+    <div class="mobile-menu__bg"></div>
+    <nav class="mobile-menu__nav" aria-label="Мобильное меню">
+      <a href="#services"><i>01</i>Услуги</a>
+      <a href="#masters"><i>02</i>Мастера</a>
+      <a href="#process"><i>03</i>Ритуал</a>
+      <a href="#reviews"><i>04</i>Отзывы</a>
+      <a href="#booking"><i>05</i>Запись</a>
+      <a href="#contacts"><i>06</i>Контакты</a>
+    </nav>
+    <div class="mobile-menu__foot">
+      <a href="tel:+78125551717">+7 (812) 555-17-17</a>
+      <span>Рубинштейна, 17 · 10:00–22:00</span>
+    </div>
+  </div>
+
+  <main id="top">
+
+    <!-- ===== Hero ===== -->
+    <section class="hero">
+      <div class="hero__shapes" aria-hidden="true">
+        <span class="shape shape--ring" data-depth="0.6"></span>
+        <span class="shape shape--blob" data-depth="0.3"></span>
+        <span class="shape shape--cross" data-depth="0.9">+</span>
+        <span class="shape shape--dot" data-depth="1.2"></span>
+        <svg class="shape shape--wave" data-depth="0.5" viewBox="0 0 200 40"><path d="M0 20 Q 25 0 50 20 T 100 20 T 150 20 T 200 20"/></svg>
+      </div>
+
+      <div class="hero__top">
+        <p class="hero__eyebrow reveal-up">Барбершоп · Санкт-Петербург · с 2014</p>
+      </div>
+
+      <h1 class="hero__title" aria-label="Режем стиль, а не время">
+        <span class="line"><span class="split" data-split>РЕЖЕМ</span></span>
+        <span class="line line--indent">
+          <span class="hero__pole" aria-hidden="true"></span>
+          <span class="split split--outline" data-split>СТИЛЬ,</span>
+        </span>
+        <span class="line"><span class="split split--small" data-split>а&nbsp;не&nbsp;время</span></span>
+      </h1>
+
+      <div class="hero__bottom">
+        <p class="hero__lead reveal-up">Мужские стрижки, фейды и&nbsp;борода в&nbsp;старом доме на&nbsp;Рубинштейна. 45&nbsp;минут&nbsp;— и&nbsp;вы&nbsp;другой человек. Кофе&nbsp;— за&nbsp;наш счёт.</p>
+        <div class="hero__actions reveal-up">
+          <a href="#booking" class="btn magnetic" data-cursor="Go"><span>Записаться онлайн</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a href="#services" class="btn btn--ghost magnetic"><span>Прайс</span></a>
+        </div>
+      </div>
+
+      <a href="#booking" class="badge magnetic" aria-label="Записаться" data-cursor="Book">
+        <svg viewBox="0 0 200 200" class="badge__text" aria-hidden="true">
+          <defs><path id="circlePath" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs>
+          <text><textPath href="#circlePath" textLength="486" lengthAdjust="spacing">ЗАПИСАТЬСЯ • ЗАПИСАТЬСЯ • </textPath></text>
+        </svg>
+        <svg class="badge__icon" viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="18" cy="20" r="8"/><circle cx="18" cy="44" r="8"/><path d="M25 24 L54 42 M25 40 L54 22"/>
+        </svg>
+      </a>
+
+      <div class="hero__scroll" aria-hidden="true"><span></span>скролл</div>
+    </section>
+
+    <!-- ===== Бегущая строка ===== -->
+    <div class="marquee" data-velocity aria-hidden="true">
+      <div class="marquee__track">
+        <span>Фейд</span><i>✦</i><span>Кроп</span><i>✦</i><span>Помпадур</span><i>✦</i><span>Андеркат</span><i>✦</i><span>Борода</span><i>✦</i><span>Бритьё опасной бритвой</span><i>✦</i>
+        <span>Фейд</span><i>✦</i><span>Кроп</span><i>✦</i><span>Помпадур</span><i>✦</i><span>Андеркат</span><i>✦</i><span>Борода</span><i>✦</i><span>Бритьё опасной бритвой</span><i>✦</i>
+      </div>
+    </div>
+
+    <!-- ===== О нас / цифры ===== -->
+    <section class="about section">
+      <div class="container">
+        <p class="section__label reveal-up">( 01 ) О нас</p>
+        <p class="about__text reveal-words">Мы&nbsp;не салон красоты. Мы&nbsp;— мастерская, где&nbsp;каждую стрижку собирают руками, ножницами и&nbsp;терпением. Без&nbsp;конвейера, без&nbsp;спешки, с&nbsp;хорошей музыкой и&nbsp;честным разговором.</p>
+        <div class="stats">
+          <div class="stat reveal-up">
+            <div class="stat__num"><span data-counter="12">0</span></div>
+            <div class="stat__label">лет на Рубинштейна</div>
+          </div>
+          <div class="stat reveal-up">
+            <div class="stat__num"><span data-counter="48700" data-format>0</span>+</div>
+            <div class="stat__label">стрижек сделано</div>
+          </div>
+          <div class="stat reveal-up">
+            <div class="stat__num"><span data-counter="4.9" data-decimals="1">0</span>★</div>
+            <div class="stat__label">рейтинг на картах, 2 314 отзывов</div>
+          </div>
+          <div class="stat reveal-up">
+            <div class="stat__num"><span data-counter="7">0</span></div>
+            <div class="stat__label">мастеров в команде</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Услуги ===== -->
+    <section class="services section" id="services">
+      <div class="container">
+        <div class="section__head">
+          <p class="section__label reveal-up">( 02 ) Услуги и цены</p>
+          <h2 class="section__title"><span class="split" data-split>Прайс</span></h2>
+        </div>
+
+        <div class="tabs reveal-up" role="tablist" aria-label="Категории услуг">
+          <button class="tab is-active" role="tab" aria-selected="true" data-filter="all">Все</button>
+          <button class="tab" role="tab" aria-selected="false" data-filter="hair">Стрижки</button>
+          <button class="tab" role="tab" aria-selected="false" data-filter="beard">Борода</button>
+          <button class="tab" role="tab" aria-selected="false" data-filter="combo">Комплексы</button>
+        </div>
+
+        <ul class="price-list">
+          <li class="price" data-cat="hair" data-cursor="+">
+            <span class="price__num">01</span>
+            <div class="price__info"><h3>Мужская стрижка</h3><p>Консультация, мытьё, стрижка ножницами и машинкой, укладка</p></div>
+            <span class="price__time">60 мин</span>
+            <span class="price__cost">2 200 ₽</span>
+          </li>
+          <li class="price" data-cat="hair" data-cursor="+">
+            <span class="price__num">02</span>
+            <div class="price__info"><h3>Фейд / skin fade</h3><p>Плавный переход до кожи, прорисовка контуров шейвером</p></div>
+            <span class="price__time">60 мин</span>
+            <span class="price__cost">2 500 ₽</span>
+          </li>
+          <li class="price" data-cat="hair" data-cursor="+">
+            <span class="price__num">03</span>
+            <div class="price__info"><h3>Стрижка машинкой</h3><p>Одна-две насадки, окантовка, без укладки</p></div>
+            <span class="price__time">30 мин</span>
+            <span class="price__cost">1 400 ₽</span>
+          </li>
+          <li class="price" data-cat="hair" data-cursor="+">
+            <span class="price__num">04</span>
+            <div class="price__info"><h3>Детская стрижка</h3><p>До 12 лет. Мультики на планшете включены</p></div>
+            <span class="price__time">40 мин</span>
+            <span class="price__cost">1 600 ₽</span>
+          </li>
+          <li class="price" data-cat="beard" data-cursor="+">
+            <span class="price__num">05</span>
+            <div class="price__info"><h3>Моделирование бороды</h3><p>Форма, контур опасной бритвой, горячее полотенце, масло</p></div>
+            <span class="price__time">40 мин</span>
+            <span class="price__cost">1 500 ₽</span>
+          </li>
+          <li class="price" data-cat="beard" data-cursor="+">
+            <span class="price__num">06</span>
+            <div class="price__info"><h3>Королевское бритьё</h3><p>Распаривание, пена из помазка, два прохода опасной бритвой, маска</p></div>
+            <span class="price__time">45 мин</span>
+            <span class="price__cost">2 000 ₽</span>
+          </li>
+          <li class="price" data-cat="beard" data-cursor="+">
+            <span class="price__num">07</span>
+            <div class="price__info"><h3>Камуфляж седины</h3><p>Тонирование волос или бороды, натуральный результат за 10 минут</p></div>
+            <span class="price__time">20 мин</span>
+            <span class="price__cost">1 200 ₽</span>
+          </li>
+          <li class="price" data-cat="combo" data-cursor="+">
+            <span class="price__num">08</span>
+            <div class="price__info"><h3>Стрижка + борода</h3><p>Полный апгрейд: стрижка, моделирование бороды, укладка</p></div>
+            <span class="price__time">90 мин</span>
+            <span class="price__cost">3 400 ₽</span>
+          </li>
+          <li class="price" data-cat="combo" data-cursor="+">
+            <span class="price__num">09</span>
+            <div class="price__info"><h3>Отец + сын</h3><p>Две стрижки в соседних креслах. Лимонад для младшего</p></div>
+            <span class="price__time">80 мин</span>
+            <span class="price__cost">3 500 ₽</span>
+          </li>
+          <li class="price" data-cat="combo" data-cursor="+">
+            <span class="price__num">10</span>
+            <div class="price__info"><h3>«Жених»</h3><p>Стрижка, королевское бритьё, уход за лицом, укладка и бокал игристого</p></div>
+            <span class="price__time">120 мин</span>
+            <span class="price__cost">5 900 ₽</span>
+          </li>
+        </ul>
+        <p class="services__note reveal-up">Цены указаны для мастера. Топ-барбер&nbsp;+500&nbsp;₽, арт-директор&nbsp;+900&nbsp;₽.</p>
+      </div>
+    </section>
+
+    <!-- ===== Ритуал / горизонтальный скролл ===== -->
+    <section class="process" id="process">
+      <div class="process__sticky">
+        <div class="process__head">
+          <p class="section__label">( 03 ) Как проходит визит</p>
+          <h2 class="section__title section__title--light">Ритуал в&nbsp;5&nbsp;шагов</h2>
+        </div>
+        <div class="process__track">
+          <article class="step">
+            <span class="step__num">01</span>
+            <div class="step__icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64"><path d="M14 26h30v14a12 12 0 0 1-12 12h-6a12 12 0 0 1-12-12z"/><path d="M44 30h4a6 6 0 0 1 0 12h-4"/><path class="steam" d="M22 18c0-4 4-4 4-8M30 18c0-4 4-4 4-8"/></svg>
+            </div>
+            <h3>Кофе и&nbsp;разговор</h3>
+            <p>Эспрессо, чай или&nbsp;что-то покрепче. Мастер расспросит о&nbsp;работе, образе жизни и&nbsp;том, сколько времени вы&nbsp;готовы тратить на&nbsp;укладку.</p>
+          </article>
+          <article class="step">
+            <span class="step__num">02</span>
+            <div class="step__icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="18"/><path class="spin" d="M32 14v6M32 44v6M14 32h6M44 32h6"/><circle cx="32" cy="32" r="4"/></svg>
+            </div>
+            <h3>Подбор формы</h3>
+            <p>Смотрим на&nbsp;форму головы, рост волос и&nbsp;вихры. Показываем референсы и&nbsp;честно говорим, что&nbsp;вам пойдёт, а&nbsp;что&nbsp;нет.</p>
+          </article>
+          <article class="step">
+            <span class="step__num">03</span>
+            <div class="step__icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64"><circle cx="18" cy="20" r="7"/><circle cx="18" cy="44" r="7"/><path class="snip" d="M24 24 L54 42 M24 40 L54 22"/></svg>
+            </div>
+            <h3>Стрижка</h3>
+            <p>Мытьё с&nbsp;массажем головы, затем ножницы, машинка и&nbsp;шейвер. Никакого конвейера: на&nbsp;одного гостя&nbsp;— один час.</p>
+          </article>
+          <article class="step">
+            <span class="step__num">04</span>
+            <div class="step__icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64"><path d="M10 40h34l10-8-10-8H10z"/><path class="shine" d="M18 32h20"/></svg>
+            </div>
+            <h3>Горячее полотенце</h3>
+            <p>Распариваем кожу, правим контуры опасной бритвой, наносим бальзам. В&nbsp;этот момент обычно хочется остаться жить.</p>
+          </article>
+          <article class="step">
+            <span class="step__num">05</span>
+            <div class="step__icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64"><path d="M20 52V24a12 12 0 0 1 24 0v28z"/><path d="M26 14h12"/><path class="drop" d="M32 32v8"/></svg>
+            </div>
+            <h3>Укладка и&nbsp;советы</h3>
+            <p>Укладываем, показываем, как&nbsp;повторить дома за&nbsp;3&nbsp;минуты, и&nbsp;подбираем средство. Без&nbsp;навязчивых продаж.</p>
+          </article>
+        </div>
+        <div class="process__bar" aria-hidden="true"><span></span></div>
+      </div>
+    </section>
+
+    <!-- ===== Мастера ===== -->
+    <section class="masters section" id="masters">
+      <div class="container">
+        <div class="section__head">
+          <p class="section__label reveal-up">( 04 ) Команда</p>
+          <h2 class="section__title"><span class="split" data-split>Мастера</span></h2>
+        </div>
+        <div class="masters__grid">
+          <article class="master reveal-up" data-tilt data-cursor="Hi">
+            <div class="master__art master__art--1" aria-hidden="true">
+              <span class="master__blob"></span>
+              <svg viewBox="0 0 200 220" class="master__face">
+                <path class="body" d="M30 222c6-34 34-50 72-50s66 16 72 50z"/>
+                <path class="skin" d="M88 150h28v30h-28z"/>
+                <ellipse class="skin" cx="102" cy="110" rx="44" ry="54"/>
+                <circle class="eye" cx="86" cy="112" r="4"/><circle class="eye" cx="118" cy="112" r="4"/>
+                <path d="M78 100h14M112 100h14"/>
+                <path class="hair" d="M54 96c-6-50 26-74 58-70 32 4 46 30 40 70-8-16-22-30-50-30s-40 14-48 30z"/>
+                <path class="beard" d="M58 116c4 50 30 66 44 66s40-16 44-66c-8 14-22 20-44 20s-36-6-44-20z"/>
+              </svg>
+              <span class="master__initials">АВ</span>
+            </div>
+            <div class="master__info">
+              <h3>Артём Волков</h3>
+              <p class="master__role">Арт-директор · 14 лет</p>
+              <p class="master__desc">Классика и&nbsp;сложные помпадуры. Чемпион Barber Battle СПб&nbsp;— 2021.</p>
+            </div>
+          </article>
+          <article class="master reveal-up" data-tilt data-cursor="Hi">
+            <div class="master__art master__art--2" aria-hidden="true">
+              <span class="master__blob"></span>
+              <svg viewBox="0 0 200 220" class="master__face">
+                <path class="body" d="M30 222c6-34 34-50 72-50s66 16 72 50z"/>
+                <path class="skin" d="M88 150h28v30h-28z"/>
+                <ellipse class="skin" cx="102" cy="110" rx="44" ry="54"/>
+                <circle class="eye" cx="86" cy="112" r="4"/><circle class="eye" cx="118" cy="112" r="4"/>
+                <path d="M78 100h14M112 100h14"/>
+                <path d="M92 140q10 8 20 0"/><path class="hair" d="M54 98c-6-40 18-64 48-66 32-2 52 18 46 64-6-10-14-16-20-16l-8-14-10 12-16-14-12 16c-14 0-20 8-28 18z"/>
+                
+              </svg>
+              <span class="master__initials">МС</span>
+            </div>
+            <div class="master__info">
+              <h3>Марк Седов</h3>
+              <p class="master__role">Топ-барбер · 8 лет</p>
+              <p class="master__desc">Король фейдов. Переход до&nbsp;кожи без&nbsp;единой полоски.</p>
+            </div>
+          </article>
+          <article class="master reveal-up" data-tilt data-cursor="Hi">
+            <div class="master__art master__art--3" aria-hidden="true">
+              <span class="master__blob"></span>
+              <svg viewBox="0 0 200 220" class="master__face">
+                <path class="body" d="M30 222c6-34 34-50 72-50s66 16 72 50z"/>
+                <path class="skin" d="M88 150h28v30h-28z"/>
+                <ellipse class="skin" cx="102" cy="110" rx="44" ry="54"/>
+                <circle class="eye" cx="86" cy="112" r="4"/><circle class="eye" cx="118" cy="112" r="4"/>
+                <path d="M78 100h14M112 100h14"/>
+                <path class="hair" d="M56 92c0-36 20-56 46-56s46 20 46 56c-12-12-28-18-46-18s-34 6-46 18z"/>
+                <path class="beard" d="M62 126c6 38 24 48 40 48s34-10 40-48c-10 8-22 12-40 12s-30-4-40-12z"/>
+              </svg>
+              <span class="master__initials">ТА</span>
+            </div>
+            <div class="master__info">
+              <h3>Тимур Алиев</h3>
+              <p class="master__role">Барбер · 6 лет</p>
+              <p class="master__desc">Бороды любой сложности и&nbsp;королевское бритьё опасной бритвой.</p>
+            </div>
+          </article>
+          <article class="master reveal-up" data-tilt data-cursor="Hi">
+            <div class="master__art master__art--4" aria-hidden="true">
+              <span class="master__blob"></span>
+              <svg viewBox="0 0 200 220" class="master__face">
+                <path class="body" d="M30 222c6-34 34-50 72-50s66 16 72 50z"/>
+                <path class="skin" d="M88 150h28v30h-28z"/>
+                <ellipse class="skin" cx="102" cy="110" rx="44" ry="54"/>
+                <circle class="eye" cx="86" cy="112" r="4"/><circle class="eye" cx="118" cy="112" r="4"/>
+                <path d="M78 100h14M112 100h14"/>
+                <path d="M92 140q10 8 20 0"/><path class="hair" d="M50 106c-8-52 22-78 54-76 30 2 54 26 46 76-4-22-20-40-48-40-24 0-44 14-52 40z"/>
+                
+              </svg>
+              <span class="master__initials">ДК</span>
+            </div>
+            <div class="master__info">
+              <h3>Даня Ким</h3>
+              <p class="master__role">Барбер · 4 года</p>
+              <p class="master__desc">Текстурные кропы, корейские укладки и&nbsp;смелые эксперименты.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Большая строка ===== -->
+    <section class="bigline" aria-hidden="true">
+      <div class="bigline__row" data-direction="1">НОЖНИЦЫ ✂ БРИТВА ✂ ХАРАКТЕР ✂ НОЖНИЦЫ ✂ БРИТВА ✂ ХАРАКТЕР ✂</div>
+      <div class="bigline__row bigline__row--outline" data-direction="-1">FADE · CROP · BEARD · SHAVE · FADE · CROP · BEARD · SHAVE ·</div>
+    </section>
+
+    <!-- ===== Отзывы ===== -->
+    <section class="reviews section" id="reviews">
+      <div class="container">
+        <div class="section__head">
+          <p class="section__label reveal-up">( 05 ) Отзывы</p>
+          <h2 class="section__title"><span class="split" data-split>Говорят</span></h2>
+        </div>
+        <div class="slider reveal-up">
+          <div class="slider__viewport">
+            <div class="slider__track">
+              <blockquote class="review">
+                <div class="review__stars" aria-label="5 из 5">★★★★★</div>
+                <p>«Хожу к&nbsp;Марку третий год. Ни&nbsp;разу не&nbsp;пришлось объяснять дважды&nbsp;— он&nbsp;помнит, как&nbsp;я&nbsp;стригся в&nbsp;прошлый раз, лучше меня.»</p>
+                <footer><b>Илья Р.</b><span>Яндекс Карты · октябрь 2026</span></footer>
+              </blockquote>
+              <blockquote class="review">
+                <div class="review__stars" aria-label="5 из 5">★★★★★</div>
+                <p>«Подарила мужу „Жениха“ перед свадьбой. Вернулся довольный, пахнущий кедром и&nbsp;с&nbsp;идеальной бородой. Фото получились огонь.»</p>
+                <footer><b>Анастасия К.</b><span>2ГИС · сентябрь 2026</span></footer>
+              </blockquote>
+              <blockquote class="review">
+                <div class="review__stars" aria-label="5 из 5">★★★★★</div>
+                <p>«Королевское бритьё у&nbsp;Тимура&nbsp;— это медитация. Чуть не&nbsp;уснул под&nbsp;горячим полотенцем. Кожа после&nbsp;— как&nbsp;у&nbsp;младенца.»</p>
+                <footer><b>Денис М.</b><span>Google · август 2026</span></footer>
+              </blockquote>
+              <blockquote class="review">
+                <div class="review__stars" aria-label="5 из 5">★★★★★</div>
+                <p>«Привёл сына на&nbsp;„Отец + сын“. Теперь он&nbsp;сам напоминает, что&nbsp;пора в&nbsp;КЛИНОК. Лимонад, кстати, правда вкусный.»</p>
+                <footer><b>Сергей В.</b><span>Яндекс Карты · июль 2026</span></footer>
+              </blockquote>
+              <blockquote class="review">
+                <div class="review__stars" aria-label="5 из 5">★★★★★</div>
+                <p>«Даня сделал текстурный кроп, о&nbsp;котором я&nbsp;год сомневался. Зря сомневался. Атмосфера, музыка, кофе&nbsp;— всё на&nbsp;уровне.»</p>
+                <footer><b>Никита Л.</b><span>2ГИС · июнь 2026</span></footer>
+              </blockquote>
+            </div>
+          </div>
+          <div class="slider__controls">
+            <button class="slider__btn magnetic" data-dir="-1" aria-label="Предыдущий отзыв"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+            <div class="slider__dots" role="tablist" aria-label="Выбор отзыва"></div>
+            <button class="slider__btn magnetic" data-dir="1" aria-label="Следующий отзыв"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Запись ===== -->
+    <section class="booking section" id="booking">
+      <div class="container booking__wrap">
+        <div class="booking__intro">
+          <p class="section__label reveal-up">( 06 ) Онлайн-запись</p>
+          <h2 class="section__title section__title--dark"><span class="split" data-split>Займите</span><br><span class="split" data-split>кресло</span></h2>
+          <p class="booking__lead reveal-up">Выберите услугу, мастера и&nbsp;время&nbsp;— администратор подтвердит запись в&nbsp;течение 10&nbsp;минут. Отмена бесплатно за&nbsp;2&nbsp;часа.</p>
+          <div class="booking__chair" aria-hidden="true">
+            <span class="booking__pole"></span>
+          </div>
+        </div>
+
+        <form class="form reveal-up" novalidate>
+          <div class="form__step" data-step="1">
+            <span class="form__legend">1. Услуга</span>
+            <div class="chips" data-name="service">
+              <button type="button" class="chip is-active" data-value="Мужская стрижка">Стрижка · 2 200 ₽</button>
+              <button type="button" class="chip" data-value="Фейд">Фейд · 2 500 ₽</button>
+              <button type="button" class="chip" data-value="Борода">Борода · 1 500 ₽</button>
+              <button type="button" class="chip" data-value="Стрижка + борода">Стрижка + борода · 3 400 ₽</button>
+              <button type="button" class="chip" data-value="Королевское бритьё">Бритьё · 2 000 ₽</button>
+            </div>
+          </div>
+
+          <div class="form__step" data-step="2">
+            <span class="form__legend">2. Мастер</span>
+            <div class="chips" data-name="master">
+              <button type="button" class="chip is-active" data-value="Любой">Любой свободный</button>
+              <button type="button" class="chip" data-value="Артём">Артём</button>
+              <button type="button" class="chip" data-value="Марк">Марк</button>
+              <button type="button" class="chip" data-value="Тимур">Тимур</button>
+              <button type="button" class="chip" data-value="Даня">Даня</button>
+            </div>
+          </div>
+
+          <div class="form__step" data-step="3">
+            <span class="form__legend">3. День и время</span>
+            <div class="days" data-name="day"></div>
+            <div class="chips chips--time" data-name="time">
+              <button type="button" class="chip" data-value="11:00">11:00</button>
+              <button type="button" class="chip" data-value="12:30">12:30</button>
+              <button type="button" class="chip is-active" data-value="14:00">14:00</button>
+              <button type="button" class="chip" data-value="15:30">15:30</button>
+              <button type="button" class="chip" data-value="17:00">17:00</button>
+              <button type="button" class="chip" data-value="18:30">18:30</button>
+              <button type="button" class="chip" data-value="20:00">20:00</button>
+            </div>
+          </div>
+
+          <div class="form__step form__fields" data-step="4">
+            <span class="form__legend">4. Контакты</span>
+            <label class="field">
+              <input type="text" name="name" placeholder=" " autocomplete="name" required>
+              <span>Ваше имя</span>
+            </label>
+            <label class="field">
+              <input type="tel" name="phone" placeholder=" " autocomplete="tel" inputmode="tel" required>
+              <span>Телефон</span>
+            </label>
+          </div>
+
+          <div class="form__summary" aria-live="polite"></div>
+          <button type="submit" class="btn btn--dark btn--wide magnetic" data-cursor="Go">
+            <span>Записаться</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+
+          <div class="form__success" aria-live="assertive">
+            <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52"/><path d="M36 62l16 16 32-34"/></svg>
+            <h3>Вы записаны!</h3>
+            <p class="form__success-text"></p>
+            <button type="button" class="btn btn--dark btn--small form__reset">Новая запись</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===== Контакты ===== -->
+    <section class="contacts section" id="contacts">
+      <div class="container">
+        <p class="section__label reveal-up">( 07 ) Контакты</p>
+        <div class="contacts__grid">
+          <div class="contacts__col reveal-up">
+            <span class="contacts__k">Адрес</span>
+            <p>Санкт-Петербург,<br>ул.&nbsp;Рубинштейна,&nbsp;17<br>вход со&nbsp;двора, 2&nbsp;этаж</p>
+            <p class="muted">5&nbsp;минут от&nbsp;м.&nbsp;Достоевская</p>
+          </div>
+          <div class="contacts__col reveal-up">
+            <span class="contacts__k">Часы работы</span>
+            <p>Ежедневно<br>10:00&nbsp;—&nbsp;22:00</p>
+            <p class="muted">Последняя запись в&nbsp;21:00</p>
+          </div>
+          <div class="contacts__col reveal-up">
+            <span class="contacts__k">Связь</span>
+            <p><a class="link" href="tel:+78125551717">+7&nbsp;(812)&nbsp;555-17-17</a><br><a class="link" href="mailto:hello@klinok.bar">hello@klinok.bar</a></p>
+            <p class="socials"><a class="link" href="#contacts">Telegram</a> <a class="link" href="#contacts">VK</a> <a class="link" href="#contacts">WhatsApp</a></p>
+          </div>
+        </div>
+
+        <div class="map reveal-up" aria-label="Схема проезда">
+          <svg viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <g class="map__streets">
+              <path d="M0 80 H800"/><path d="M0 230 H800"/><path d="M160 0 V320"/><path d="M420 0 V320"/><path d="M640 0 V320"/>
+              <path d="M0 300 L300 0" class="map__diag"/>
+            </g>
+            <g class="map__labels">
+              <text x="430" y="40">ул. Рубинштейна</text>
+              <text x="20" y="70">Невский пр.</text>
+              <text x="20" y="220">ул. Ломоносова</text>
+              <text x="650" y="300">Загородный пр.</text>
+            </g>
+            <path class="map__route" d="M140 300 L160 230 L420 230 L420 150"/>
+            <g class="map__metro" transform="translate(140 300)"><circle r="14"/><text y="5" text-anchor="middle">М</text></g>
+            <g class="map__pin" transform="translate(420 150)">
+              <circle class="map__pulse" r="18"/>
+              <circle r="10"/>
+            </g>
+          </svg>
+          <span class="map__tag">КЛИНОК · Рубинштейна, 17</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Футер ===== -->
+  <footer class="footer">
+    <div class="footer__big" aria-hidden="true"><span data-split class="split">КЛИНОК</span></div>
+    <div class="footer__row">
+      <span>© 2026 Барбершоп «КЛИНОК»</span>
+      <span>ИП Волков А.С. · ИНН 781234567890</span>
+      <a href="#top" class="link">Наверх ↑</a>
+    </div>
+  </footer>
+
+  <!-- ===== Мобильная плавающая кнопка ===== -->
+  <a href="#booking" class="fab" aria-label="Записаться">
+    <span>Записаться</span>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </a>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

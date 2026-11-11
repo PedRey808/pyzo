@@ -15,8 +15,8 @@ android {
         versionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
         versionName = "1.0." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
         ndk {
-            // 64-битные и старые 32-битные телефоны ARM
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            // Python 3.12 для Android есть только под 64-битные процессоры (почти все телефоны с 2017 года)
+            abiFilters += listOf("arm64-v8a")
         }
     }
 

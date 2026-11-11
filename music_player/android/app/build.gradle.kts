@@ -41,6 +41,7 @@ val syncPython by tasks.registering(Sync::class) {
     into(layout.buildDirectory.dir("python-src/musichub"))
 }
 tasks.named("preBuild") { dependsOn(syncPython) }
+tasks.matching { it.name != "syncPython" && it.name.contains("Python") }.configureEach { dependsOn(syncPython) }
 
 chaquopy {
     defaultConfig {

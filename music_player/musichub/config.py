@@ -12,11 +12,13 @@ DEFAULTS = {
     "yandex_token": "",
     "spotify_client_id": "",
     "spotify_client_secret": "",
+    "spotify_refresh_token": "",   # появляется после «Войти через Spotify»
+    "spotify_user": "",
     # прокси для исходящих запросов (необязательно), например socks5://host:port
     "proxy": "",
 }
 
-SECRET_KEYS = ("yandex_token", "spotify_client_secret")
+SECRET_KEYS = ("yandex_token", "spotify_client_secret", "spotify_refresh_token")
 MASK = "••••"
 
 

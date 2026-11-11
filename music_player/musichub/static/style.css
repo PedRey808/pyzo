@@ -31,7 +31,7 @@ h3 { font-size:14px; color:var(--muted); margin:18px 0 6px; text-transform:upper
 .track .t { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .track .a { color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .badge { font-size:10px; font-weight:700; padding:2px 6px; border-radius:6px; color:#000; margin-right:6px; }
-.b-soundcloud { background:var(--sc); } .b-yandex { background:var(--ya); } .b-spotify { background:var(--sp); } .b-youtube { background:var(--yt); color:#fff; } .b-file { background:var(--muted); }
+.b-soundcloud { background:var(--sc); } .b-yandex { background:var(--ya); } .b-spotify { background:var(--sp); } .b-youtube { background:var(--yt); color:#fff; } .b-file { background:var(--muted); } .b-lock { background:#3a3a48; color:#d8d8e4; font-weight:600; }
 .track .dur { color:var(--muted); font-size:13px; width:42px; text-align:right; flex:none; }
 .track .acts { display:flex; gap:4px; flex:none; }
 .track .acts button { background:var(--panel2); padding:6px 9px; border-radius:8px; font-size:14px; }
@@ -63,3 +63,16 @@ h3 { font-size:14px; color:var(--muted); margin:18px 0 6px; text-transform:upper
 #ya-status.ok { color:#6fdc8c; }
 #ya-status.bad { color:#ff8080; }
 code { background:var(--panel2); padding:1px 4px; border-radius:4px; }
+#sp-login { background:#1db954; color:#04130a; font-weight:600; }
+#sp-status.ok { color:#6fdc8c; } #sp-status.bad { color:#ff8080; }
+.chip.sp { background:#173823; color:#9ff0b9; }
+details summary { cursor:pointer; color:var(--text); }
+details ol { padding-left:20px; margin:8px 0; color:var(--muted); font-size:13px; }
+details li { margin-bottom:6px; }
+details a { color:#9f8cff; }
+button.small { padding:2px 8px; font-size:12px; }
+.playlist { display:flex; align-items:center; gap:10px; padding:7px; border-radius:10px; cursor:pointer; }
+.playlist:hover { background:var(--panel); }
+.playlist img, .playlist .noart { width:46px; height:46px; border-radius:8px; object-fit:cover; background:var(--panel2); flex:none; }
+fieldset { min-width:0; }
+code { word-break:break-all; }

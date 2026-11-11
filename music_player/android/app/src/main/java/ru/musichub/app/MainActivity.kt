@@ -42,8 +42,11 @@ class MainActivity : Activity() {
         }
         web.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                if (request.url.host == "127.0.0.1") return false
-                // внешние ссылки (инструкции по токенам и т.п.) — в обычный браузер
+                val host = request.url.host ?: ""
+                if (host == "127.0.0.1") return false
+                // вход в Spotify открываем прямо в приложении, после него Spotify вернёт на 127.0.0.1
+                if (host == "spotify.com" || host.endsWith(".spotify.com")) return false
+                // остальные внешние ссылки (инструкции и т.п.) — в обычный браузер
                 startActivity(Intent(Intent.ACTION_VIEW, request.url))
                 return true
             }

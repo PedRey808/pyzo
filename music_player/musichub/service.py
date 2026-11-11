@@ -1,7 +1,9 @@
 """Логика приложения: поиск по всем источникам, подбор аудио, кэш и скачивание."""
 import re
+import secrets
 import shutil
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -51,6 +53,48 @@ class MusicHub:
         self.reload()
         self.matches.clear()
         return config.public_view(self.settings)
+
+    # ---------- Spotify: вход и медиатека ----------
+    def spotify_login_url(self, port: int) -> str:
+        from .sources.spotify import pkce_pair, redirect_uri
+
+        verifier, challenge = pkce_pair()
+        state = secrets.token_urlsafe(16)
+        now = time.time()
+        self._spotify_states = {k: v for k, v in getattr(self, "_spotify_states", {}).items() if now - v[1] < 900}
+        self._spotify_states[state] = (verifier, now, redirect_uri(port))
+        return self.sources["spotify"].authorize_url(redirect_uri(port), state, challenge)
+
+    def spotify_finish(self, code: str, state: str) -> str:
+        pending = getattr(self, "_spotify_states", {}).pop(state, None)
+        if not pending:
+            raise SourceError("Spotify: вход устарел, нажмите «Войти через Spotify» ещё раз")
+        verifier, _, redirect = pending
+        result = self.sources["spotify"].exchange_code(code, redirect, verifier)
+        config.save({"spotify_refresh_token": result["refresh_token"], "spotify_user": result["user"]})
+        self.reload()
+        return result["user"]
+
+    def spotify_logout(self):
+        config.save({"spotify_refresh_token": "", "spotify_user": ""})
+        self.reload()
+
+    def spotify_status(self) -> dict:
+        sp = self.sources["spotify"]
+        if not sp.logged_in():
+            return {"logged_in": False, "client_id": bool(self.settings.get("spotify_client_id"))}
+        me = sp.me()
+        return {"logged_in": True, "client_id": True, "name": me["name"], "product": me["product"]}
+
+    def spotify_liked(self) -> dict:
+        return {"results": {"spotify": self._remember(self.sources["spotify"].liked())}, "errors": {}}
+
+    def spotify_playlists(self) -> List[dict]:
+        return self.sources["spotify"].playlists()
+
+    def spotify_playlist(self, playlist_id: str) -> dict:
+        return {"results": {"spotify": self._remember(self.sources["spotify"].playlist_tracks(playlist_id))},
+                "errors": {}}
 
     def yandex_account(self) -> dict:
         return self.sources["yandex"].account_info()
@@ -106,17 +150,21 @@ class MusicHub:
     # ---------- подбор звука ----------
     def playable(self, track: Track) -> Track:
         """Трек, из которого реально можно взять звук."""
-        if track.source != "spotify":
-            return track
         if track.key in self.matches:
             return self.matches[track.key]
+        if track.source != "spotify" and not track.protected:
+            return track
+        return self.find_elsewhere(track)
+
+    def find_elsewhere(self, track: Track) -> Track:
+        """Тот же трек в другом источнике: для Spotify и для треков, которые источник не отдаёт (DRM)."""
         tried = []
         for name in self.MATCH_ORDER:
             src = self.sources[name]
             if not src.available():
                 continue
             try:
-                candidates = src.search(track.full_name, 5)
+                candidates = [c for c in src.search(track.full_name, 6) if not c.protected and c.key != track.key]
             except SourceError as exc:
                 tried.append(str(exc))
                 continue
@@ -125,8 +173,12 @@ class MusicHub:
                 self.registry[match.key] = match
                 self.matches[track.key] = match
                 return match
-        detail = ("; ".join(tried)) if tried else "совпадений не найдено"
+        detail = ("; ".join(tried)) if tried else "в других источниках не нашлось"
         raise SourceError(f"Не нашёл звук для «{track.full_name}»: {detail}")
+
+    def resolved_via(self, key: str):
+        """Если звук взят из другого источника — этот трек, иначе None."""
+        return self.matches.get(key)
 
     def _lock(self, key: str) -> threading.Lock:
         with self._locks_guard:
@@ -138,6 +190,22 @@ class MusicHub:
         if track is None:
             raise KeyError(key)
         real = self.playable(track)
+        try:
+            path = self._fetch_cached(real)
+        except SourceError as exc:
+            if real is not track:
+                raise
+            # источник отказал (DRM, недоступно в регионе и т.п.) — ищем этот трек в других
+            track.protected = True
+            try:
+                alt = self.find_elsewhere(track)
+            except SourceError as not_found:
+                raise SourceError(f"{exc}. {not_found}") from exc
+            path = self._fetch_cached(alt)
+        self._trim_cache()
+        return path
+
+    def _fetch_cached(self, real: Track) -> Path:
         config.CACHE_DIR.mkdir(parents=True, exist_ok=True)
         stem = safe_filename(real.key.replace(":", "_"))
         with self._lock(real.key):
@@ -145,9 +213,7 @@ class MusicHub:
             if existing:
                 existing[0].touch()
                 return existing[0]
-            path = self.sources[real.source].fetch_audio(real, config.CACHE_DIR / stem)
-        self._trim_cache()
-        return path
+            return self.sources[real.source].fetch_audio(real, config.CACHE_DIR / stem)
 
     def _trim_cache(self):
         files = sorted(config.CACHE_DIR.glob("*"), key=lambda p: p.stat().st_mtime)

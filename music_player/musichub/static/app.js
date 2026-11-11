@@ -37,6 +37,7 @@ async function api(path, opts = {}) {
 }
 
 // ---------- вкладки ----------
+function showTab(name) { document.querySelector(`nav button[data-tab="${name}"]`).click(); }
 document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click", () => {
   document.querySelectorAll("nav button").forEach((x) => x.classList.toggle("active", x === b));
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.id === "tab-" + b.dataset.tab));
@@ -96,7 +97,9 @@ function trackRow(t, onPlay, extraActs = []) {
     art,
     el("div", { class: "meta", onclick: onPlay },
       el("div", { class: "t" }, t.title),
-      el("div", { class: "a" }, el("span", { class: "badge b-" + t.source }, SOURCE_NAMES[t.source] || t.source), t.artist || "")),
+      el("div", { class: "a" }, el("span", { class: "badge b-" + t.source }, SOURCE_NAMES[t.source] || t.source),
+        t.protected ? el("span", { class: "badge b-lock", title: "Источник закрыл звук (DRM или только отрывок) — найдём этот трек в других сервисах" }, "🔒 замена") : null,
+        t.artist || "")),
     el("div", { class: "dur" }, t.duration ? fmt(t.duration) : ""),
     el("div", { class: "acts" }, ...extraActs, ...acts));
   return row;
@@ -142,13 +145,13 @@ async function playCurrent() {
   $("#p-play").textContent = "⏳";
   highlight(t);
   try {
-    let src;
+    let src, via = null;
     if (t.source === "file") src = `/api/library/${encodeURIComponent(t.id)}`;
-    else src = (await api("/api/prepare", { json: t })).audio;
+    else { const r = await api("/api/prepare", { json: t }); src = r.audio; via = r.via_title; }
     if (token !== playToken) return;           // пользователь уже включил другой трек
     audio.src = src.startsWith("/api/library/") ? src : encodeURI(src);
+    $("#p-artist").textContent = (t.artist || "") + (via ? ` · звук: ${via}` : "");
     await audio.play();
-    $("#p-artist").textContent = t.artist || "";
     setMediaSession(t);
     prefetchNext();
   } catch (err) {
@@ -239,7 +242,93 @@ async function loadSettings() {
   const s = await api("/api/settings");
   for (const [k, v] of Object.entries(s)) { const i = $(`#settings-form [name="${k}"]`); if (i) i.value = v; }
   checkYandex(Boolean(s.yandex_token));
+  showSpotifyState(s);
+  checkSpotify(Boolean(s.spotify_refresh_token));
 }
+
+// ---------- Spotify: вход и медиатека ----------
+const spotifyRedirect = `http://127.0.0.1:${location.port || 80}/api/spotify/callback`;
+$("#sp-redirect").textContent = spotifyRedirect;
+$("#sp-remote").hidden = isLocal || Boolean(window.MusicHubAndroid);
+
+function showSpotifyState(s) {
+  const logged = Boolean(s.spotify_refresh_token);
+  $("#sp-library").hidden = !logged;
+  $("#sp-logout").hidden = !logged;
+  $("#sp-login").textContent = logged ? "Войти заново" : "Войти через Spotify";
+  if (!s.spotify_client_id && !logged) $("#sp-help").open = true;
+}
+
+async function checkSpotify(logged) {
+  const st = $("#sp-status");
+  st.className = "hint";
+  if (!logged) { st.textContent = "Вход не выполнен"; return; }
+  st.textContent = "Проверяю вход…";
+  try {
+    const r = await api("/api/spotify/status");
+    st.className = "hint ok";
+    st.textContent = `Вы вошли как ${r.name || "пользователь Spotify"}`;
+  } catch (err) { st.className = "hint bad"; st.textContent = err.message; }
+}
+
+$("#sp-login").addEventListener("click", async () => {
+  const input = $("#settings-form [name=spotify_client_id]");
+  const id = input.value.trim();
+  if (!id) { $("#sp-help").open = true; input.focus(); toast("Сначала вставьте Client ID — см. инструкцию"); return; }
+  try {
+    await api("/api/settings", { json: { spotify_client_id: id } });
+  } catch (err) { toast(err.message); return; }
+  location.href = "/api/spotify/login";   // страница входа Spotify, затем возврат в приложение
+});
+$("#sp-logout").addEventListener("click", async () => {
+  await api("/api/spotify/logout", { json: {} });
+  toast("Вы вышли из Spotify");
+  loadSettings(); loadSources();
+});
+$("#sp-copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(spotifyRedirect); toast("Скопировано"); }
+  catch { toast(spotifyRedirect); }
+});
+
+$("#sp-liked").addEventListener("click", async () => {
+  $("#status").textContent = "Загружаю «Любимые треки»…"; $("#results").innerHTML = "";
+  try {
+    const data = await api("/api/spotify/liked");
+    renderResults(data);
+    $("#status").textContent = `Любимые треки Spotify: ${data.results.spotify.length}`;
+  } catch (err) { $("#status").textContent = err.message; }
+});
+$("#sp-playlists").addEventListener("click", async () => {
+  $("#status").textContent = "Загружаю плейлисты…";
+  const box = $("#results"); box.innerHTML = "";
+  try {
+    const list = await api("/api/spotify/playlists");
+    $("#status").textContent = list.length ? `Плейлисты Spotify: ${list.length}` : "Плейлистов нет";
+    for (const p of list) {
+      box.append(el("div", { class: "playlist", onclick: () => openPlaylist(p) },
+        p.image ? el("img", { src: p.image, loading: "lazy", alt: "" }) : el("div", { class: "noart" }),
+        el("div", { class: "meta" }, el("div", { class: "t" }, p.name),
+          el("div", { class: "a" }, [p.owner, p.count != null ? `${p.count} треков` : ""].filter(Boolean).join(" · ")))));
+    }
+  } catch (err) { $("#status").textContent = err.message; }
+});
+async function openPlaylist(p) {
+  $("#status").textContent = `Загружаю «${p.name}»…`; $("#results").innerHTML = "";
+  try {
+    const data = await api(`/api/spotify/playlist/${encodeURIComponent(p.id)}`);
+    renderResults(data);
+    $("#status").textContent = `${p.name}: ${data.results.spotify.length} треков`;
+  } catch (err) { $("#status").textContent = err.message; }
+}
+
+// возврат со страницы входа Spotify
+(function handleSpotifyReturn() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has("spotify") && !q.has("spotify_error")) return;
+  history.replaceState(null, "", "/");
+  if (q.get("spotify") === "ok") toast("Вход в Spotify выполнен");
+  else { toast(q.get("spotify_error")); setTimeout(() => showTab("settings"), 0); }
+})();
 
 // ---------- вход в Яндекс ----------
 // официальный клиент Яндекс Музыки — через него работает библиотека yandex-music
@@ -308,4 +397,9 @@ $("#settings-form").addEventListener("submit", async (e) => {
 });
 
 loadSources().catch((err) => ($("#status").textContent = err.message));
+api("/api/settings").then(showSpotifyState).catch(() => {});
+// вход мог завершиться в другом окне/браузере — обновим состояние при возвращении в приложение
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") api("/api/settings").then(showSpotifyState).catch(() => {});
+});
 if ("serviceWorker" in navigator && (location.protocol === "https:" || isLocal)) navigator.serviceWorker.register("/sw.js");

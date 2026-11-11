@@ -13,7 +13,9 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware import Middleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import FileResponse, JSONResponse, Response
+from urllib.parse import quote
+
+from starlette.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
@@ -107,7 +109,10 @@ def create_app(hub: MusicHub = None) -> Starlette:
         """Зарегистрировать трек и подготовить аудио (скачать в кэш)."""
         t = hub.register(body)
         hub.cached_audio(t.key)
-        return {"key": t.key, "audio": f"/api/audio/{t.key}"}
+        via = hub.resolved_via(t.key)
+        return {"key": t.key, "audio": f"/api/audio/{t.key}",
+                "via": via.to_dict() if via else None,
+                "via_title": hub.sources[via.source].title if via else None}
 
     def audio(req):
         return media(hub.cached_audio(req.path_params["key"]))
@@ -133,6 +138,39 @@ def create_app(hub: MusicHub = None) -> Starlette:
         attach = req.query_params.get("attachment") in ("1", "true")
         return media(path, path.name if attach else None)
 
+    def spotify_login(req):
+        try:
+            return RedirectResponse(hub.spotify_login_url(req.url.port or 80), status_code=302)
+        except SourceError as exc:
+            return RedirectResponse("/?spotify_error=" + quote(str(exc)), status_code=302)
+
+    def spotify_callback(req):
+        q = req.query_params
+        if q.get("error"):
+            msg = "Вход отменён" if q["error"] == "access_denied" else f"Spotify: {q['error']}"
+            return RedirectResponse("/?spotify_error=" + quote(msg), status_code=302)
+        try:
+            hub.spotify_finish(q.get("code", ""), q.get("state", ""))
+        except SourceError as exc:
+            return RedirectResponse("/?spotify_error=" + quote(str(exc)), status_code=302)
+        return RedirectResponse("/?spotify=ok", status_code=302)
+
+    def spotify_status(_):
+        return hub.spotify_status()
+
+    def spotify_logout(_, __):
+        hub.spotify_logout()
+        return {"ok": True}
+
+    def spotify_liked(_):
+        return hub.spotify_liked()
+
+    def spotify_playlists(_):
+        return hub.spotify_playlists()
+
+    def spotify_playlist(req):
+        return hub.spotify_playlist(req.path_params["pid"])
+
     def yandex_account(_):
         return hub.yandex_account()
 
@@ -157,6 +195,13 @@ def create_app(hub: MusicHub = None) -> Starlette:
         Route("/api/library", endpoint(library)),
         Route("/api/library/{name}", endpoint(library_file)),
         Route("/api/yandex/account", endpoint(yandex_account)),
+        Route("/api/spotify/login", endpoint(spotify_login)),
+        Route("/api/spotify/callback", endpoint(spotify_callback)),
+        Route("/api/spotify/status", endpoint(spotify_status)),
+        Route("/api/spotify/logout", endpoint(spotify_logout, True), methods=["POST"]),
+        Route("/api/spotify/liked", endpoint(spotify_liked)),
+        Route("/api/spotify/playlists", endpoint(spotify_playlists)),
+        Route("/api/spotify/playlist/{pid}", endpoint(spotify_playlist)),
         Route("/api/settings", endpoint(get_settings)),
         Route("/api/settings", endpoint(set_settings, True), methods=["POST"]),
         Mount("/static", StaticFiles(directory=STATIC), name="static"),

@@ -84,6 +84,49 @@ class SoundCloudSource(YtDlpSource):
     title = "SoundCloud"
     search_prefix = "scsearch"
 
+    def search(self, query: str, limit: int = 10) -> List[Track]:
+        try:
+            return self._api_search(query, limit)
+        except SourceError:
+            raise
+        except Exception:  # изменилось внутреннее API yt-dlp — обычный поиск без отметок о DRM
+            return super().search(query, limit)
+
+    def _api_search(self, query: str, limit: int) -> List[Track]:
+        """Поиск через API SoundCloud (как в yt-dlp), но с полной информацией о треке:
+        так заранее видно, защищён ли трек DRM или доступен только 30-секундный отрывок."""
+        with yt_dlp.YoutubeDL(self._opts()) as ydl:
+            ie = ydl.get_info_extractor("SoundcloudSearch")
+            try:
+                ie.initialize()
+                data = ie._call_api(
+                    ie._API_V2_BASE + "search/tracks", query, "Поиск",
+                    query={"q": query, "limit": limit, "offset": 0, "linked_partitioning": 1},
+                    headers=ie._HEADERS)
+            except yt_dlp.utils.ExtractorError as exc:
+                raise SourceError(f"SoundCloud: ошибка поиска ({exc})") from exc
+        return [self.item_to_track(i) for i in (data or {}).get("collection") or [] if i and i.get("id")]
+
+    @staticmethod
+    def item_to_track(item: dict) -> Track:
+        transcodings = (item.get("media") or {}).get("transcodings") or []
+        protocols = [((t.get("format") or {}).get("protocol") or "") for t in transcodings]
+        drm_only = not protocols or all(p.startswith(("ctr-", "cbc-")) for p in protocols)
+        preview_only = item.get("policy") == "SNIP"
+        user = item.get("user") or {}
+        art = (item.get("artwork_url") or user.get("avatar_url") or "").replace("-large.", "-t500x500.")
+        ms = item.get("full_duration") or item.get("duration")
+        return Track(
+            source="soundcloud",
+            id=str(item["id"]),
+            title=item.get("title") or "Без названия",
+            artist=user.get("username") or "",
+            duration=int(ms) // 1000 if ms else None,
+            artwork=art,
+            url=item.get("permalink_url") or "",
+            protected=drm_only or preview_only,
+        )
+
 
 class YouTubeSource(YtDlpSource):
     name = "youtube"

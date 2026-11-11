@@ -28,6 +28,10 @@
         <button type="submit">Найти</button>
       </form>
       <div id="source-filter" class="chips"></div>
+      <div id="sp-library" class="chips" hidden>
+        <button type="button" id="sp-liked" class="chip sp">❤ Любимые в Spotify</button>
+        <button type="button" id="sp-playlists" class="chip sp">Мои плейлисты Spotify</button>
+      </div>
       <div id="status"></div>
       <div id="results"></div>
     </section>
@@ -62,11 +66,35 @@
             <input name="yandex_token" type="password" placeholder="y0_… или https://music.yandex.ru/#access_token=…" autocomplete="off"></label>
           <small>Полные треки — с подпиской Яндекс Плюс. Токен хранится только на этом устройстве.</small>
         </fieldset>
-        <label>Spotify Client ID
-          <input name="spotify_client_id"></label>
-        <label>Spotify Client Secret
-          <input name="spotify_client_secret" type="password">
-          <small>Создайте приложение на developer.spotify.com. Spotify даёт только каталог, звук подбирается в других источниках.</small></label>
+        <fieldset class="ya-box">
+          <legend>Spotify</legend>
+          <div id="sp-status" class="hint">Вход не выполнен</div>
+          <div class="ya-buttons">
+            <button type="button" id="sp-login">Войти через Spotify</button>
+            <button type="button" id="sp-logout" class="ghost" hidden>Выйти</button>
+          </div>
+          <p id="sp-remote" class="hint" hidden>Вход через Spotify работает только на устройстве, где запущен MusicHub
+            (в приложении на телефоне или в программе на компьютере).</p>
+          <details id="sp-help">
+            <summary>Как подключить Spotify (один раз, ~3 минуты)</summary>
+            <ol>
+              <li>Откройте <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>
+                и войдите своим аккаунтом Spotify.</li>
+              <li>Нажмите <b>Create app</b>. Название и описание — любые. В поле <b>Redirect URIs</b> вставьте адрес
+                <code id="sp-redirect"></code> <button type="button" id="sp-copy" class="ghost small">Копировать</button>
+                и нажмите <b>Add</b>. Отметьте <b>Web API</b>, примите условия, нажмите <b>Save</b>.</li>
+              <li>Откройте созданное приложение → <b>Settings</b>, скопируйте <b>Client ID</b> в поле ниже и нажмите «Сохранить».</li>
+              <li>Нажмите «Войти через Spotify» и разрешите доступ.</li>
+            </ol>
+            <small>Spotify даёт каталог, ваши плейлисты и «Любимые треки», а звук приложение находит в Яндекс Музыке,
+              SoundCloud или YouTube. Если Spotify пишет об ошибке доступа — в приложении на developer.spotify.com
+              откройте <b>User Management</b> и добавьте свой e-mail от Spotify.</small>
+          </details>
+          <label>Spotify Client ID
+            <input name="spotify_client_id" autocomplete="off"></label>
+          <label>Client Secret <small>(не нужен, если вошли через Spotify)</small>
+            <input name="spotify_client_secret" type="password" autocomplete="off"></label>
+        </fieldset>
         <label>Прокси для исходящих запросов (необязательно)
           <input name="proxy" placeholder="socks5://127.0.0.1:1080"></label>
         <button type="submit">Сохранить</button>

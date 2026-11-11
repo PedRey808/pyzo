@@ -13,6 +13,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.view.View
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -125,8 +126,30 @@ class MainActivity : Activity() {
         }
     }
 
+    /** Цвет строки состояния и навигации под тему приложения. */
+    @Suppress("DEPRECATION")
+    private fun applySystemBars(color: Int, dark: Boolean) {
+        window.statusBarColor = color
+        window.navigationBarColor = color
+        var flags = window.decorView.systemUiVisibility
+        flags = if (dark) flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+                else flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            flags = if (dark) flags and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
+                    else flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        }
+        window.decorView.systemUiVisibility = flags
+        web.setBackgroundColor(color)
+    }
+
     /** Методы, доступные из JavaScript как window.MusicHubAndroid. */
     inner class Bridge {
+        @JavascriptInterface
+        fun setTheme(color: String, dark: Boolean) {
+            val parsed = try { Color.parseColor(color.trim()) } catch (e: Exception) { return }
+            runOnUiThread { applySystemBars(parsed, dark) }
+        }
+
         @JavascriptInterface
         fun yandexLogin() {
             runOnUiThread {

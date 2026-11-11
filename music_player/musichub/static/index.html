@@ -3,118 +3,262 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0f0f14">
+  <meta name="theme-color" content="#0b0b10">
   <title>MusicHub</title>
   <link rel="manifest" href="/static/manifest.json">
   <link rel="icon" href="/static/icon.svg">
   <link rel="apple-touch-icon" href="/static/icon.svg">
+  <script>
+    // тема до отрисовки страницы — без «вспышки» не той темы
+    (function () {
+      var t = "system";
+      try { t = localStorage.getItem("musichub-theme") || "system"; } catch (e) {}
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header>
-    <div class="logo">♪ MusicHub</div>
-    <nav>
-      <button data-tab="search" class="active">Поиск</button>
-      <button data-tab="queue">Очередь</button>
-      <button data-tab="library">Скачанное</button>
-      <button data-tab="settings">Настройки</button>
-    </nav>
-  </header>
+  <!-- иконки -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="i-logo" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-queue" viewBox="0 0 24 24"><path d="M4 6h11M4 11h11M4 16h7"/><path d="M18 17.5V8l3-1"/><circle cx="16" cy="17.5" r="2"/></symbol>
+    <symbol id="i-saved" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path class="fill" d="M7.5 4.6v14.8a1 1 0 0 0 1.53.85l11.8-7.4a1 1 0 0 0 0-1.7L9.03 3.75A1 1 0 0 0 7.5 4.6z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect class="fill" x="6" y="4" width="4.2" height="16" rx="1.3"/><rect class="fill" x="13.8" y="4" width="4.2" height="16" rx="1.3"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><rect class="fill" x="4.5" y="5" width="2.6" height="14" rx="1.2"/><path class="fill" d="M19.5 5.9v12.2a1 1 0 0 1-1.6.8l-8.5-6.1a1 1 0 0 1 0-1.6l8.5-6.1a1 1 0 0 1 1.6.8z"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><rect class="fill" x="16.9" y="5" width="2.6" height="14" rx="1.2"/><path class="fill" d="M4.5 5.9v12.2a1 1 0 0 0 1.6.8l8.5-6.1a1 1 0 0 0 0-1.6L6.1 5.1a1 1 0 0 0-1.6.8z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.2-4.5-9.1-9.2A4.9 4.9 0 0 1 12 7.2a4.9 4.9 0 0 1 9.1 3.6C19.2 15.5 12 20 12 20z"/></symbol>
+    <symbol id="i-playlist" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 9h8M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+    <symbol id="i-auto" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 5 6.5 9H3.5v6h3L11 19z"/><path d="M15.5 9a4.5 4.5 0 0 1 0 6M18.5 6a8.5 8.5 0 0 1 0 12"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  </svg>
 
-  <main>
-    <section id="tab-search" class="tab active">
-      <form id="search-form">
-        <input id="q" type="search" placeholder="Трек, исполнитель или ссылка на плейлист Spotify" autocomplete="off">
-        <button type="submit">Найти</button>
-      </form>
-      <div id="source-filter" class="chips"></div>
-      <div id="sp-library" class="chips" hidden>
-        <button type="button" id="sp-liked" class="chip sp">❤ Любимые в Spotify</button>
-        <button type="button" id="sp-playlists" class="chip sp">Мои плейлисты Spotify</button>
+  <div class="app">
+    <!-- боковое меню (компьютер) -->
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark"><svg><use href="#i-logo"/></svg></span>MusicHub</div>
+      <nav class="side-nav">
+        <button data-tab="search" class="active"><svg><use href="#i-search"/></svg>Поиск</button>
+        <button data-tab="queue"><svg><use href="#i-queue"/></svg>Очередь<span class="count" data-queue-count></span></button>
+        <button data-tab="library"><svg><use href="#i-saved"/></svg>Скачанное</button>
+        <button data-tab="settings"><svg><use href="#i-settings"/></svg>Настройки</button>
+      </nav>
+      <div class="side-group" data-sp-only hidden>
+        <div class="side-title">Spotify</div>
+        <button data-sp-liked><svg><use href="#i-heart"/></svg>Любимые</button>
+        <button data-sp-playlists><svg><use href="#i-playlist"/></svg>Плейлисты</button>
       </div>
-      <div id="status"></div>
-      <div id="results"></div>
-    </section>
+    </aside>
 
-    <section id="tab-queue" class="tab">
-      <div class="row-between"><h2>Очередь</h2><button id="clear-queue" class="ghost">Очистить</button></div>
-      <div id="queue"></div>
-    </section>
+    <main class="main" id="main">
+      <!-- ПОИСК -->
+      <section id="tab-search" class="tab active">
+        <h1 class="page-title">Поиск</h1>
+        <form id="search-form" class="searchbar" role="search">
+          <svg class="searchbar-icon"><use href="#i-search"/></svg>
+          <input id="q" type="search" placeholder="Трек, исполнитель или ссылка" autocomplete="off" enterkeyhint="search">
+          <button type="button" id="q-clear" class="icon-btn" hidden aria-label="Очистить"><svg><use href="#i-x"/></svg></button>
+        </form>
+        <div id="source-filter" class="chips" role="tablist"></div>
+        <div id="sp-library" class="chips sp-chips" hidden>
+          <button type="button" class="chip chip-sp" data-sp-liked><svg><use href="#i-heart"/></svg>Любимые в Spotify</button>
+          <button type="button" class="chip chip-sp" data-sp-playlists><svg><use href="#i-playlist"/></svg>Мои плейлисты</button>
+        </div>
+        <div id="status" class="status"></div>
+        <div id="results"></div>
+        <div id="search-empty" class="hero">
+          <div class="hero-art"><svg><use href="#i-logo"/></svg></div>
+          <h2>Что послушаем?</h2>
+          <p>Ищите сразу в Яндекс Музыке, SoundCloud, Spotify и YouTube. Любой трек можно скачать.</p>
+          <div id="recent" class="chips recent"></div>
+        </div>
+      </section>
 
-    <section id="tab-library" class="tab">
-      <div class="row-between"><h2>Скачанное на компьютере</h2><button id="refresh-lib" class="ghost">Обновить</button></div>
-      <p class="hint" id="lib-path"></p>
-      <div id="library"></div>
-    </section>
+      <!-- ОЧЕРЕДЬ -->
+      <section id="tab-queue" class="tab">
+        <div class="page-head">
+          <h1 class="page-title">Очередь</h1>
+          <button id="clear-queue" class="btn ghost small">Очистить</button>
+        </div>
+        <div id="queue"></div>
+      </section>
 
-    <section id="tab-settings" class="tab">
-      <h2>Настройки</h2>
-      <form id="settings-form" class="settings">
-        <label>Папка для скачанных треков
-          <input name="download_dir"></label>
-        <fieldset class="ya-box">
-          <legend>Яндекс Музыка</legend>
-          <div id="ya-status" class="hint">Вход не выполнен</div>
-          <div class="ya-buttons">
-            <button type="button" id="ya-login">Войти через Яндекс</button>
-            <button type="button" id="ya-logout" class="ghost" hidden>Выйти</button>
+      <!-- СКАЧАННОЕ -->
+      <section id="tab-library" class="tab">
+        <div class="page-head">
+          <h1 class="page-title">Скачанное</h1>
+          <button id="refresh-lib" class="icon-btn" aria-label="Обновить"><svg><use href="#i-refresh"/></svg></button>
+        </div>
+        <p class="hint" id="lib-path"></p>
+        <div id="library"></div>
+      </section>
+
+      <!-- НАСТРОЙКИ -->
+      <section id="tab-settings" class="tab">
+        <h1 class="page-title">Настройки</h1>
+        <form id="settings-form" class="settings" autocomplete="off">
+
+          <div class="card">
+            <div class="card-title">Оформление</div>
+            <div class="segmented" id="theme-switch" role="radiogroup" aria-label="Тема">
+              <button type="button" data-theme-value="system"><svg><use href="#i-auto"/></svg>Системная</button>
+              <button type="button" data-theme-value="light"><svg><use href="#i-sun"/></svg>Светлая</button>
+              <button type="button" data-theme-value="dark"><svg><use href="#i-moon"/></svg>Тёмная</button>
+            </div>
           </div>
-          <p id="ya-manual" class="hint" hidden>Открылась страница входа Яндекса. Войдите, затем скопируйте
-            <b>адрес страницы</b>, на которую вас перекинуло (в нём есть <code>access_token=</code>), вставьте его
-            в поле ниже и нажмите «Сохранить». Если адрес сразу поменялся — см. README, раздел про токен.</p>
-          <label>Токен или адрес страницы после входа
-            <input name="yandex_token" type="password" placeholder="y0_… или https://music.yandex.ru/#access_token=…" autocomplete="off"></label>
-          <small>Полные треки — с подпиской Яндекс Плюс. Токен хранится только на этом устройстве.</small>
-        </fieldset>
-        <fieldset class="ya-box">
-          <legend>Spotify</legend>
-          <div id="sp-status" class="hint">Вход не выполнен</div>
-          <div class="ya-buttons">
-            <button type="button" id="sp-login">Войти через Spotify</button>
-            <button type="button" id="sp-logout" class="ghost" hidden>Выйти</button>
-          </div>
-          <p id="sp-remote" class="hint" hidden>Вход через Spotify работает только на устройстве, где запущен MusicHub
-            (в приложении на телефоне или в программе на компьютере).</p>
-          <details id="sp-help">
-            <summary>Как подключить Spotify (один раз, ~3 минуты)</summary>
-            <ol>
-              <li>Откройте <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>
-                и войдите своим аккаунтом Spotify.</li>
-              <li>Нажмите <b>Create app</b>. Название и описание — любые. В поле <b>Redirect URIs</b> вставьте адрес
-                <code id="sp-redirect"></code> <button type="button" id="sp-copy" class="ghost small">Копировать</button>
-                и нажмите <b>Add</b>. Отметьте <b>Web API</b>, примите условия, нажмите <b>Save</b>.</li>
-              <li>Откройте созданное приложение → <b>Settings</b>, скопируйте <b>Client ID</b> в поле ниже и нажмите «Сохранить».</li>
-              <li>Нажмите «Войти через Spotify» и разрешите доступ.</li>
-            </ol>
-            <small>Spotify даёт каталог, ваши плейлисты и «Любимые треки», а звук приложение находит в Яндекс Музыке,
-              SoundCloud или YouTube. Если Spotify пишет об ошибке доступа — в приложении на developer.spotify.com
-              откройте <b>User Management</b> и добавьте свой e-mail от Spotify.</small>
-          </details>
-          <label>Spotify Client ID
-            <input name="spotify_client_id" autocomplete="off"></label>
-          <label>Client Secret <small>(не нужен, если вошли через Spotify)</small>
-            <input name="spotify_client_secret" type="password" autocomplete="off"></label>
-        </fieldset>
-        <label>Прокси для исходящих запросов (необязательно)
-          <input name="proxy" placeholder="socks5://127.0.0.1:1080"></label>
-        <button type="submit">Сохранить</button>
-        <span id="settings-status"></span>
-      </form>
-    </section>
-  </main>
 
-  <footer id="player">
-    <img id="p-art" alt="">
-    <div class="p-info"><div id="p-title">Ничего не играет</div><div id="p-artist"></div></div>
-    <div class="p-controls">
-      <button id="p-prev" title="Назад">⏮</button>
-      <button id="p-play" class="big" title="Играть/пауза">▶</button>
-      <button id="p-next" title="Дальше">⏭</button>
+          <div class="card">
+            <div class="card-title">Музыка</div>
+            <label class="switch-row">
+              <span><b>Без цензуры</b><small>Показывать первыми оригинальные версии (explicit), а «цензурные», clean и радио-версии — ниже.
+                При замене звука выбирается оригинал.</small></span>
+              <input type="checkbox" id="uncensored" class="switch">
+            </label>
+            <label class="field">Папка для скачанных треков
+              <input name="download_dir"></label>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <span class="src-logo src-yandex"></span>
+              <div><div class="card-title">Яндекс Музыка</div><div id="ya-status" class="hint">Вход не выполнен</div></div>
+            </div>
+            <div class="btn-row">
+              <button type="button" id="ya-login" class="btn btn-yandex">Войти через Яндекс</button>
+              <button type="button" id="ya-logout" class="btn ghost" hidden>Выйти</button>
+            </div>
+            <p id="ya-manual" class="hint" hidden>Открылась страница входа Яндекса. Войдите, затем скопируйте
+              <b>адрес страницы</b>, на которую вас перекинуло (в нём есть <code>access_token=</code>), вставьте его
+              в поле ниже и нажмите «Сохранить».</p>
+            <details class="more">
+              <summary>Ввести токен вручную</summary>
+              <label class="field">Токен или адрес страницы после входа
+                <input name="yandex_token" type="password" placeholder="y0_… или https://music.yandex.ru/#access_token=…"></label>
+            </details>
+            <small class="hint">Полные треки — с подпиской Яндекс Плюс. Токен хранится только на этом устройстве.</small>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <span class="src-logo src-spotify"></span>
+              <div><div class="card-title">Spotify</div><div id="sp-status" class="hint">Вход не выполнен</div></div>
+            </div>
+            <div class="btn-row">
+              <button type="button" id="sp-login" class="btn btn-spotify">Войти через Spotify</button>
+              <button type="button" id="sp-logout" class="btn ghost" hidden>Выйти</button>
+            </div>
+            <p id="sp-remote" class="hint" hidden>Вход через Spotify работает только на устройстве, где запущен MusicHub
+              (в приложении на телефоне или в программе на компьютере).</p>
+            <details id="sp-help" class="more">
+              <summary>Как подключить Spotify (один раз, ~3 минуты)</summary>
+              <ol class="steps">
+                <li>Откройте <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>
+                  и войдите своим аккаунтом Spotify.</li>
+                <li>Нажмите <b>Create app</b>. Название и описание — любые. В поле <b>Redirect URIs</b> вставьте
+                  <span class="copy-line"><code id="sp-redirect"></code><button type="button" id="sp-copy" class="icon-btn small" aria-label="Копировать"><svg><use href="#i-copy"/></svg></button></span>
+                  и нажмите <b>Add</b>. Отметьте <b>Web API</b>, примите условия, нажмите <b>Save</b>.</li>
+                <li>Откройте приложение → <b>Settings</b>, скопируйте <b>Client ID</b> в поле ниже и нажмите «Сохранить».</li>
+                <li>Нажмите «Войти через Spotify» и разрешите доступ.</li>
+              </ol>
+              <small class="hint">Spotify даёт каталог, ваши плейлисты и «Любимые треки», а звук приложение находит в Яндекс Музыке,
+                SoundCloud или YouTube. Если Spotify пишет «доступ запрещён» — добавьте свой e-mail в <b>User Management</b> приложения.</small>
+            </details>
+            <label class="field">Client ID
+              <input name="spotify_client_id"></label>
+            <details class="more">
+              <summary>Client Secret (не нужен, если вошли через Spotify)</summary>
+              <label class="field">Client Secret
+                <input name="spotify_client_secret" type="password"></label>
+            </details>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Сеть</div>
+            <label class="field">Прокси для исходящих запросов (необязательно)
+              <input name="proxy" placeholder="socks5://127.0.0.1:1080"></label>
+          </div>
+
+          <div class="save-bar">
+            <button type="submit" class="btn primary">Сохранить</button>
+            <span id="settings-status" class="hint"></span>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <!-- плеер -->
+    <footer class="player" id="player">
+      <div class="mini-progress"><span id="mini-progress"></span></div>
+      <button class="p-now" id="p-open" aria-label="Открыть плеер">
+        <span class="p-art-wrap"><img id="p-art" src="/static/cover.svg" alt=""></span>
+        <span class="p-info"><span id="p-title">Ничего не играет</span><span id="p-artist">Найдите трек и нажмите на него</span></span>
+      </button>
+      <div class="p-center">
+        <div class="p-controls">
+          <button id="p-prev" class="icon-btn" aria-label="Назад"><svg><use href="#i-prev"/></svg></button>
+          <button id="p-play" class="play-btn" aria-label="Играть"><svg><use href="#i-play"/></svg></button>
+          <button id="p-next" class="icon-btn" aria-label="Дальше"><svg><use href="#i-next"/></svg></button>
+        </div>
+        <div class="p-seek"><span id="p-cur">0:00</span><input id="p-bar" class="range" type="range" min="0" max="1000" value="0" aria-label="Перемотка"><span id="p-dur">0:00</span></div>
+      </div>
+      <div class="p-right">
+        <svg class="vol-icon"><use href="#i-volume"/></svg>
+        <input id="p-vol" class="range vol" type="range" min="0" max="100" value="100" aria-label="Громкость">
+        <button class="icon-btn" id="p-expand" aria-label="Развернуть"><svg><use href="#i-expand"/></svg></button>
+      </div>
+    </footer>
+
+    <!-- нижние вкладки (телефон) -->
+    <nav class="tabbar">
+      <button data-tab="search" class="active"><svg><use href="#i-search"/></svg><span>Поиск</span></button>
+      <button data-tab="queue"><svg><use href="#i-queue"/></svg><span>Очередь</span><i class="dot" data-queue-count></i></button>
+      <button data-tab="library"><svg><use href="#i-saved"/></svg><span>Скачанное</span></button>
+      <button data-tab="settings"><svg><use href="#i-settings"/></svg><span>Настройки</span></button>
+    </nav>
+  </div>
+
+  <!-- полноэкранный плеер -->
+  <div class="now" id="now" hidden>
+    <div class="now-bg"><img id="now-bg" alt=""></div>
+    <div class="now-inner">
+      <div class="now-top">
+        <button class="icon-btn" id="now-close" aria-label="Свернуть"><svg><use href="#i-down"/></svg></button>
+        <span class="now-label">Сейчас играет</span>
+        <span class="icon-btn-spacer"></span>
+      </div>
+      <div class="now-art"><img id="now-art" alt=""></div>
+      <div class="now-meta">
+        <div class="now-text"><div id="now-title"></div><div id="now-artist"></div></div>
+        <button class="icon-btn" id="now-save" aria-label="Скачать"><svg><use href="#i-download"/></svg></button>
+      </div>
+      <div class="now-seek"><input id="now-bar" class="range" type="range" min="0" max="1000" value="0" aria-label="Перемотка">
+        <div class="now-times"><span id="now-cur">0:00</span><span id="now-dur">0:00</span></div></div>
+      <div class="now-controls">
+        <button id="now-prev" class="icon-btn big" aria-label="Назад"><svg><use href="#i-prev"/></svg></button>
+        <button id="now-play" class="play-btn huge" aria-label="Играть"><svg><use href="#i-play"/></svg></button>
+        <button id="now-next" class="icon-btn big" aria-label="Дальше"><svg><use href="#i-next"/></svg></button>
+      </div>
+      <div id="now-via" class="now-via"></div>
     </div>
-    <div class="p-seek"><span id="p-cur">0:00</span><input id="p-bar" type="range" min="0" max="1000" value="0"><span id="p-dur">0:00</span></div>
-    <audio id="audio" preload="auto"></audio>
-  </footer>
-  <div id="toast"></div>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <audio id="audio" preload="auto"></audio>
   <script src="/static/app.js"></script>
 </body>
 </html>

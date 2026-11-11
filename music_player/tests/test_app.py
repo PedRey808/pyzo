@@ -73,6 +73,49 @@ class MatcherTests(unittest.TestCase):
         self.assertIsNone(best_match(target, [Track("youtube", "z", "Совсем другое", "Кто-то", 30)]))
 
 
+class UncensoredTests(unittest.TestCase):
+    def test_looks_censored(self):
+        from musichub.matcher import looks_censored
+
+        for title in ("Song (Clean)", "Song [Censored]", "Песня (Цензурная версия)", "Песня (без мата)", "Song - Radio Edit"):
+            self.assertTrue(looks_censored(Track("x", "1", title)), title)
+        for title in ("Song", "Cleaning Day", "Песня (Remix)"):
+            self.assertFalse(looks_censored(Track("x", "1", title)), title)
+        self.assertFalse(looks_censored(Track("x", "1", "Song (Clean)", explicit=True)))
+
+    def test_match_prefers_uncensored(self):
+        target = Track("spotify", "s", "Песня", "Артист", 200, explicit=True)
+        clean = Track("soundcloud", "1", "Песня (Цензурная версия)", "Артист", 200)
+        dirty = Track("soundcloud", "2", "Песня", "Артист", 201)
+        self.assertIs(best_match(target, [clean, dirty]), dirty)
+        self.assertIs(best_match(target, [clean]), clean)  # если другой нет — берём что есть
+
+    def test_search_puts_censored_last(self):
+        hub = fake_hub()
+        hub.sources["soundcloud"].tracks = [Track("soundcloud", "1", "Песня (Clean)", "А"),
+                                            Track("soundcloud", "2", "Песня", "А")]
+        ids = [t["id"] for t in hub.search("песня", "soundcloud")["results"]["soundcloud"]]
+        self.assertEqual(ids, ["2", "1"])
+        config.save({"uncensored": "0"})
+        hub.reload()
+        hub.sources["soundcloud"] = FakeSource("soundcloud", [Track("soundcloud", "1", "Песня (Clean)", "А"),
+                                                              Track("soundcloud", "2", "Песня", "А")])
+        ids = [t["id"] for t in hub.search("песня", "soundcloud")["results"]["soundcloud"]]
+        self.assertEqual(ids, ["1", "2"])
+        config.save({"uncensored": "1"})
+
+    def test_yandex_blocked_track_kept_as_protected(self):
+        from types import SimpleNamespace
+        from musichub.sources.yandex import YandexSource
+
+        t = SimpleNamespace(id=1, albums=[SimpleNamespace(id=2)], title="Песня", artists_name=lambda: ["А"],
+                            duration_ms=180000, cover_uri=None, available=False, explicit=None,
+                            content_warning="explicit")
+        tr = YandexSource._to_track(t)
+        self.assertTrue(tr.protected)
+        self.assertTrue(tr.explicit)
+
+
 class UtilsTests(unittest.TestCase):
     def test_parse_spotify_url(self):
         self.assertEqual(parse_spotify_url("https://open.spotify.com/playlist/37i9dQZF1?si=xx"), ("playlist", "37i9dQZF1"))

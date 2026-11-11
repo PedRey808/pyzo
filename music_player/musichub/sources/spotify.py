@@ -185,6 +185,7 @@ class SpotifySource(Source):
             duration=(t["duration_ms"] // 1000) if t.get("duration_ms") else None,
             artwork=images[0]["url"] if images else "",
             url=(t.get("external_urls") or {}).get("spotify", ""),
+            explicit=bool(t.get("explicit")),
         )
 
     def search(self, query: str, limit: int = 10) -> List[Track]:

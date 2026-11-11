@@ -68,6 +68,9 @@ class YandexSource(Source):
             duration=(t.duration_ms // 1000) if t.duration_ms else None,
             artwork=t.get_cover_url("400x400") if t.cover_uri else "",
             url=f"https://music.yandex.ru/album/{album_id}/track/{t.id}" if album_id else "",
+            # трек скрыт в регионе / удалён правообладателем — звук найдём в других источниках
+            protected=t.available is False,
+            explicit=bool(t.explicit or t.content_warning == "explicit"),
         )
 
     def search(self, query: str, limit: int = 10) -> List[Track]:
@@ -79,7 +82,7 @@ class YandexSource(Source):
             raise SourceError(f"Яндекс Музыка: ошибка поиска ({exc})") from exc
         if not res or not res.tracks:
             return []
-        return [self._to_track(t) for t in res.tracks.results[:limit] if t.available is not False]
+        return [self._to_track(t) for t in res.tracks.results[:limit]]
 
     def fetch_audio(self, track: Track, dest: Path) -> Path:
         client = self.client()

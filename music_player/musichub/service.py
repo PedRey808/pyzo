@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from . import config
-from .matcher import best_match
+from .matcher import best_match, uncensored_first
 from .models import Track
 from .sources.base import Source, SourceError
 from .sources.spotify import SpotifySource, parse_spotify_url
@@ -47,6 +47,10 @@ class MusicHub:
                 YouTubeSource(self.settings),
             )
         }
+
+    @property
+    def uncensored(self) -> bool:
+        return self.settings.get("uncensored", "1") == "1"
 
     def update_settings(self, values: dict) -> dict:
         config.save(values)
@@ -131,6 +135,8 @@ class MusicHub:
             for n, f in zip(names, futures):
                 try:
                     _, tracks = f.result(timeout=40)
+                    if self.uncensored:
+                        tracks = uncensored_first(tracks)
                     results[n] = self._remember(tracks)
                 except Exception as exc:  # один источник упал — остальные работают
                     errors[n] = str(exc)
@@ -168,7 +174,7 @@ class MusicHub:
             except SourceError as exc:
                 tried.append(str(exc))
                 continue
-            match = best_match(track, candidates)
+            match = best_match(track, candidates, prefer_uncensored=self.uncensored)
             if match:
                 self.registry[match.key] = match
                 self.matches[track.key] = match

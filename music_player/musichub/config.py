@@ -16,6 +16,8 @@ DEFAULTS = {
     "spotify_user": "",
     # прокси для исходящих запросов (необязательно), например socks5://host:port
     "proxy": "",
+    # "1" — предпочитать версии без цензуры (explicit), «цензурные» показывать ниже
+    "uncensored": "1",
 }
 
 SECRET_KEYS = ("yandex_token", "spotify_client_secret", "spotify_refresh_token")

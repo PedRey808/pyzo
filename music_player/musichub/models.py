@@ -11,7 +11,8 @@ class Track:
     duration: Optional[int] = None   # секунды
     artwork: str = ""
     url: str = ""          # страница трека (для yt-dlp — то, что качаем)
-    protected: bool = False  # источник не отдаёт звук (DRM, только отрывок) — ищем в других
+    protected: bool = False  # источник не отдаёт звук (DRM, только отрывок, скрыт в регионе) — ищем в других
+    explicit: bool = False   # версия с ненормативной лексикой (без цензуры)
 
     @property
     def key(self) -> str:

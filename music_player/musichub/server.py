@@ -133,6 +133,9 @@ def create_app(hub: MusicHub = None) -> Starlette:
         attach = req.query_params.get("attachment") in ("1", "true")
         return media(path, path.name if attach else None)
 
+    def yandex_account(_):
+        return hub.yandex_account()
+
     def get_settings(_):
         return config.public_view(hub.settings)
 
@@ -153,6 +156,7 @@ def create_app(hub: MusicHub = None) -> Starlette:
         Route("/api/file/{key:path}", endpoint(file_for_device)),
         Route("/api/library", endpoint(library)),
         Route("/api/library/{name}", endpoint(library_file)),
+        Route("/api/yandex/account", endpoint(yandex_account)),
         Route("/api/settings", endpoint(get_settings)),
         Route("/api/settings", endpoint(set_settings, True), methods=["POST"]),
         Mount("/static", StaticFiles(directory=STATIC), name="static"),

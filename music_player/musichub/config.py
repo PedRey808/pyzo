@@ -34,7 +34,12 @@ def save(new_values: dict) -> dict:
     data = load()
     for k, v in new_values.items():
         if k in DEFAULTS and isinstance(v, str) and v != MASK:
-            data[k] = v.strip()
+            v = v.strip()
+            if k == "yandex_token" and v:
+                from .sources.yandex import extract_token
+
+                v = extract_token(v) or v
+            data[k] = v
     APP_DIR.mkdir(parents=True, exist_ok=True)
     SETTINGS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     return data

@@ -48,9 +48,20 @@
       <form id="settings-form" class="settings">
         <label>Папка для скачанных треков
           <input name="download_dir"></label>
-        <label>Токен Яндекс Музыки
-          <input name="yandex_token" type="password" placeholder="y0_…">
-          <small>Нужен аккаунт с подпиской Плюс для полных треков. Как получить токен — в README.</small></label>
+        <fieldset class="ya-box">
+          <legend>Яндекс Музыка</legend>
+          <div id="ya-status" class="hint">Вход не выполнен</div>
+          <div class="ya-buttons">
+            <button type="button" id="ya-login">Войти через Яндекс</button>
+            <button type="button" id="ya-logout" class="ghost" hidden>Выйти</button>
+          </div>
+          <p id="ya-manual" class="hint" hidden>Открылась страница входа Яндекса. Войдите, затем скопируйте
+            <b>адрес страницы</b>, на которую вас перекинуло (в нём есть <code>access_token=</code>), вставьте его
+            в поле ниже и нажмите «Сохранить». Если адрес сразу поменялся — см. README, раздел про токен.</p>
+          <label>Токен или адрес страницы после входа
+            <input name="yandex_token" type="password" placeholder="y0_… или https://music.yandex.ru/#access_token=…" autocomplete="off"></label>
+          <small>Полные треки — с подпиской Яндекс Плюс. Токен хранится только на этом устройстве.</small>
+        </fieldset>
         <label>Spotify Client ID
           <input name="spotify_client_id"></label>
         <label>Spotify Client Secret

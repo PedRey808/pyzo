@@ -52,6 +52,9 @@ class MusicHub:
         self.matches.clear()
         return config.public_view(self.settings)
 
+    def yandex_account(self) -> dict:
+        return self.sources["yandex"].account_info()
+
     def sources_info(self) -> List[dict]:
         return [{"name": s.name, "title": s.title, "available": s.available()} for s in self.sources.values()]
 

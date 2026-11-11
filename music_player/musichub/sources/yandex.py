@@ -1,9 +1,27 @@
 """Яндекс Музыка через неофициальную библиотеку yandex-music (нужен токен своего аккаунта)."""
+import re
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from ..models import Track
 from .base import Source, SourceError
+
+
+# Страница входа Яндекса для официального клиента Яндекс Музыки (через него работает библиотека yandex-music).
+# После входа Яндекс перенаправляет на music.yandex.ru/#access_token=<токен>&...
+OAUTH_URL = "https://oauth.yandex.ru/authorize?response_type=token&client_id=23cabbbdc6cd418abb4b39c32c41195d"
+_TOKEN_IN_URL = re.compile(r"access_token=([^&#\s]+)")
+
+
+def extract_token(text: str) -> Optional[str]:
+    """Токен из адреса после входа ('...#access_token=y0_..&...') или сам токен. None — если не похоже."""
+    text = (text or "").strip()
+    m = _TOKEN_IN_URL.search(text)
+    if m:
+        return m.group(1)
+    if text and re.fullmatch(r"[A-Za-z0-9_\-.]{20,}", text):
+        return text
+    return None
 
 
 class YandexSource(Source):
@@ -30,6 +48,14 @@ class YandexSource(Source):
             except Exception as exc:  # неверный токен, нет сети
                 raise SourceError(f"Яндекс Музыка: не удалось войти ({exc})") from exc
         return self._client
+
+    def account_info(self) -> dict:
+        """Кто вошёл и есть ли Плюс — чтобы сразу показать, что токен рабочий."""
+        me = self.client().me
+        acc = me.account if me else None
+        login = (acc.login if acc else "") or ""
+        name = ((acc.display_name or acc.full_name) if acc else "") or login
+        return {"login": login, "name": name, "plus": bool(me and me.plus and me.plus.has_plus)}
 
     @staticmethod
     def _to_track(t) -> Track:

@@ -26,6 +26,7 @@ import java.net.URL
 
 class MainActivity : Activity() {
     private lateinit var web: WebView
+    private val reqYandexLogin = 42
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -109,8 +110,28 @@ class MainActivity : Activity() {
         web.evaluateJavascript("typeof toast==='function'&&toast(${JSONObject.quote(msg)})", null)
     }
 
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != reqYandexLogin) return
+        val token = data?.getStringExtra(YandexLoginActivity.EXTRA_TOKEN)
+        if (resultCode == RESULT_OK && !token.isNullOrBlank()) {
+            web.evaluateJavascript("typeof onYandexToken==='function'&&onYandexToken(${JSONObject.quote(token)})", null)
+        } else {
+            jsToast("Вход в Яндекс отменён")
+        }
+    }
+
     /** Методы, доступные из JavaScript как window.MusicHubAndroid. */
     inner class Bridge {
+        @JavascriptInterface
+        fun yandexLogin() {
+            runOnUiThread {
+                @Suppress("DEPRECATION")
+                startActivityForResult(Intent(this@MainActivity, YandexLoginActivity::class.java), reqYandexLogin)
+            }
+        }
+
         @JavascriptInterface
         fun download(path: String, name: String) {
             Thread {

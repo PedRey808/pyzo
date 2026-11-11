@@ -56,3 +56,10 @@ h3 { font-size:14px; color:var(--muted); margin:18px 0 6px; text-transform:upper
          border-radius:10px; opacity:0; transition:opacity .25s; pointer-events:none; max-width:90vw; z-index:20; }
 #toast.show { opacity:1; }
 @media (max-width:600px) { .track .dur { display:none; } header { gap:8px; } }
+.ya-box { border:1px solid #2e2e3a; border-radius:12px; padding:12px 14px 14px; display:flex; flex-direction:column; gap:10px; }
+.ya-box legend { padding:0 6px; font-weight:600; }
+.ya-buttons { display:flex; gap:8px; flex-wrap:wrap; }
+#ya-login { background:#fc3f1d; }
+#ya-status.ok { color:#6fdc8c; }
+#ya-status.bad { color:#ff8080; }
+code { background:var(--panel2); padding:1px 4px; border-radius:4px; }

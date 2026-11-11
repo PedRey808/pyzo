@@ -90,6 +90,40 @@ class UtilsTests(unittest.TestCase):
         config.save({"yandex_token": ""})
 
 
+class YandexLoginTests(unittest.TestCase):
+    def test_extract_token(self):
+        from musichub.sources.yandex import extract_token
+
+        url = "https://music.yandex.ru/#access_token=y0_AgAAAABC-def_123&token_type=bearer&expires_in=31536000"
+        self.assertEqual(extract_token(url), "y0_AgAAAABC-def_123")
+        self.assertEqual(extract_token("  y0_AgAAAAAbcdefghijklmnop  "), "y0_AgAAAAAbcdefghijklmnop")
+        self.assertIsNone(extract_token("https://music.yandex.ru/"))
+        self.assertIsNone(extract_token(""))
+
+    def test_settings_accept_redirect_url(self):
+        config.save({"yandex_token": "https://music.yandex.ru/#access_token=y0_TOKEN123456789012345&token_type=bearer"})
+        self.assertEqual(config.load()["yandex_token"], "y0_TOKEN123456789012345")
+        config.save({"yandex_token": ""})
+
+    def test_account_endpoint(self):
+        from starlette.testclient import TestClient
+        from musichub.server import create_app
+
+        hub = fake_hub()
+        hub.sources["yandex"].account_info = lambda: {"login": "ivan", "name": "Иван", "plus": True}
+        r = TestClient(create_app(hub)).get("/api/yandex/account")
+        self.assertEqual(r.json(), {"login": "ivan", "name": "Иван", "plus": True})
+
+    def test_account_endpoint_without_token(self):
+        from starlette.testclient import TestClient
+        from musichub.server import create_app
+
+        config.save({"yandex_token": ""})
+        r = TestClient(create_app(MusicHub())).get("/api/yandex/account")
+        self.assertEqual(r.status_code, 502)
+        self.assertIn("токен", r.json()["detail"])
+
+
 class ServiceTests(unittest.TestCase):
     def setUp(self):
         config.save({"download_dir": str(Path(TMP) / "downloads")})

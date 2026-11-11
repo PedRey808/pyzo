@@ -31,6 +31,66 @@ def setup_windowed_logging():
         sys.stderr = sys.stderr or log
 
 
+class DesktopApi:
+    """Функции окна .exe, доступные из интерфейса как window.pywebview.api.*"""
+
+    def __init__(self):
+        self._busy = threading.Lock()
+
+    def yandex_login(self):
+        """Открывает окно входа Яндекса и возвращает токен ('' — если окно закрыли)."""
+        if not self._busy.acquire(blocking=False):
+            return ""
+        try:
+            return _yandex_login_window()
+        finally:
+            self._busy.release()
+
+
+def _yandex_login_window(timeout: float = 600) -> str:
+    import webview
+    from musichub.sources.yandex import OAUTH_URL, extract_token
+
+    found, done = {}, threading.Event()
+
+    def check(text):
+        if not text or done.is_set() or "access_token=" not in str(text):
+            return
+        token = extract_token(str(text))
+        if token:
+            found["token"] = token
+            done.set()
+
+    def on_response(*args):  # редирект 302: токен прямо в заголовке Location
+        resp = args[-1] if args else None
+        headers = getattr(resp, "headers", None) or {}
+        check(headers.get("Location") or headers.get("location"))
+        check(getattr(resp, "url", ""))
+
+    win = webview.create_window("Вход в Яндекс", html="<p>Загрузка…</p>", width=520, height=760)
+    win.events.response_received += on_response
+    win.events.loaded += lambda *a: check(_safe_url(win))
+    win.events.closed += lambda *a: done.set()
+    win.load_url(OAUTH_URL)
+
+    end = time.time() + timeout
+    while not done.is_set() and time.time() < end:
+        check(_safe_url(win))
+        done.wait(0.1)
+    try:
+        win.destroy()
+    except Exception:
+        pass
+    return found.get("token", "")
+
+
+def _safe_url(win) -> str:
+    try:
+        return win.get_current_url() or ""
+    except Exception:
+        return ""
+
+
 def lan_ip() -> str:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -89,7 +149,8 @@ def main():
         try:
             import webview  # pywebview
 
-            webview.create_window("MusicHub", url, width=1100, height=760, min_size=(380, 500))
+            webview.create_window("MusicHub", url, width=1100, height=760, min_size=(380, 500),
+                                  js_api=DesktopApi())
             webview.start()
             server.should_exit = True
             thread.join(timeout=5)

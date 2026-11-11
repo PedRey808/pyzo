@@ -28,6 +28,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".YandexLoginActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material" />
+
         <service
             android:name=".PlaybackService"
             android:exported="false"

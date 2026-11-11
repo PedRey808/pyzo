@@ -238,13 +238,71 @@ $("#refresh-lib").addEventListener("click", loadLibrary);
 async function loadSettings() {
   const s = await api("/api/settings");
   for (const [k, v] of Object.entries(s)) { const i = $(`#settings-form [name="${k}"]`); if (i) i.value = v; }
+  checkYandex(Boolean(s.yandex_token));
 }
+
+// ---------- вход в Яндекс ----------
+// официальный клиент Яндекс Музыки — через него работает библиотека yandex-music
+const YANDEX_OAUTH_URL = "https://oauth.yandex.ru/authorize?response_type=token&client_id=23cabbbdc6cd418abb4b39c32c41195d";
+
+async function checkYandex(hasToken) {
+  const st = $("#ya-status");
+  $("#ya-logout").hidden = !hasToken;
+  $("#ya-login").textContent = hasToken ? "Войти заново" : "Войти через Яндекс";
+  st.className = "hint";
+  if (!hasToken) { st.textContent = "Вход не выполнен"; return; }
+  st.textContent = "Проверяю вход…";
+  try {
+    const a = await api("/api/yandex/account");
+    st.className = "hint ok";
+    st.textContent = `Вы вошли как ${a.name || a.login || "пользователь Яндекса"}` +
+      (a.plus ? " · Плюс ✓" : " · без Плюса: будут только 30-секундные отрывки");
+  } catch (err) {
+    st.className = "hint bad";
+    st.textContent = err.message;
+  }
+}
+
+async function onYandexToken(token) {
+  try {
+    await api("/api/settings", { json: { yandex_token: token } });
+    $("#ya-manual").hidden = true;
+    toast("Вход в Яндекс выполнен");
+    await loadSettings();
+    loadSources();
+  } catch (err) { toast(err.message); }
+}
+
+$("#ya-login").addEventListener("click", async () => {
+  if (window.MusicHubAndroid && window.MusicHubAndroid.yandexLogin) {      // Android-приложение
+    window.MusicHubAndroid.yandexLogin();
+    return;
+  }
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.yandex_login) {   // MusicHub.exe
+    toast("Войдите в открывшемся окне");
+    const token = await window.pywebview.api.yandex_login();
+    if (token) onYandexToken(token); else toast("Вход отменён");
+    return;
+  }
+  window.open(YANDEX_OAUTH_URL, "_blank");                                  // обычный браузер
+  $("#ya-manual").hidden = false;
+  $("#settings-form [name=yandex_token]").type = "text";
+});
+
+$("#ya-logout").addEventListener("click", async () => {
+  await api("/api/settings", { json: { yandex_token: "" } });
+  toast("Вы вышли из Яндекса");
+  await loadSettings();
+  loadSources();
+});
 $("#settings-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const values = Object.fromEntries(new FormData(e.target).entries());
   try {
     await api("/api/settings", { json: values });
     $("#settings-status").textContent = "Сохранено ✓";
+    $("#ya-manual").hidden = true;
+    loadSettings();
     loadSources();
   } catch (err) { $("#settings-status").textContent = err.message; }
 });

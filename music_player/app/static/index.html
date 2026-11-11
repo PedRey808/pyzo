@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f0f14">
+  <title>MusicHub</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="icon" href="/static/icon.svg">
+  <link rel="apple-touch-icon" href="/static/icon.svg">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <div class="logo">♪ MusicHub</div>
+    <nav>
+      <button data-tab="search" class="active">Поиск</button>
+      <button data-tab="queue">Очередь</button>
+      <button data-tab="library">Скачанное</button>
+      <button data-tab="settings">Настройки</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="tab-search" class="tab active">
+      <form id="search-form">
+        <input id="q" type="search" placeholder="Трек, исполнитель или ссылка на плейлист Spotify" autocomplete="off">
+        <button type="submit">Найти</button>
+      </form>
+      <div id="source-filter" class="chips"></div>
+      <div id="status"></div>
+      <div id="results"></div>
+    </section>
+
+    <section id="tab-queue" class="tab">
+      <div class="row-between"><h2>Очередь</h2><button id="clear-queue" class="ghost">Очистить</button></div>
+      <div id="queue"></div>
+    </section>
+
+    <section id="tab-library" class="tab">
+      <div class="row-between"><h2>Скачанное на компьютере</h2><button id="refresh-lib" class="ghost">Обновить</button></div>
+      <p class="hint" id="lib-path"></p>
+      <div id="library"></div>
+    </section>
+
+    <section id="tab-settings" class="tab">
+      <h2>Настройки</h2>
+      <form id="settings-form" class="settings">
+        <label>Папка для скачанных треков
+          <input name="download_dir"></label>
+        <label>Токен Яндекс Музыки
+          <input name="yandex_token" type="password" placeholder="y0_…">
+          <small>Нужен аккаунт с подпиской Плюс для полных треков. Как получить токен — в README.</small></label>
+        <label>Spotify Client ID
+          <input name="spotify_client_id"></label>
+        <label>Spotify Client Secret
+          <input name="spotify_client_secret" type="password">
+          <small>Создайте приложение на developer.spotify.com. Spotify даёт только каталог, звук подбирается в других источниках.</small></label>
+        <label>Прокси для исходящих запросов (необязательно)
+          <input name="proxy" placeholder="socks5://127.0.0.1:1080"></label>
+        <button type="submit">Сохранить</button>
+        <span id="settings-status"></span>
+      </form>
+    </section>
+  </main>
+
+  <footer id="player">
+    <img id="p-art" alt="">
+    <div class="p-info"><div id="p-title">Ничего не играет</div><div id="p-artist"></div></div>
+    <div class="p-controls">
+      <button id="p-prev" title="Назад">⏮</button>
+      <button id="p-play" class="big" title="Играть/пауза">▶</button>
+      <button id="p-next" title="Дальше">⏭</button>
+    </div>
+    <div class="p-seek"><span id="p-cur">0:00</span><input id="p-bar" type="range" min="0" max="1000" value="0"><span id="p-dur">0:00</span></div>
+    <audio id="audio" preload="auto"></audio>
+  </footer>
+  <div id="toast"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

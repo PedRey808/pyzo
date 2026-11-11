@@ -15,7 +15,7 @@ from .sources.yandex import YandexSource
 from .sources.ytdlp_source import SoundCloudSource, YouTubeSource
 
 CACHE_LIMIT_BYTES = 1024 ** 3  # 1 ГБ кэша прослушивания
-AUDIO_EXT = (".mp3", ".m4a", ".opus", ".ogg", ".flac", ".wav", ".webm")
+AUDIO_EXT = (".mp3", ".m4a", ".aac", ".opus", ".ogg", ".flac", ".wav", ".webm")
 
 
 def safe_filename(name: str, max_len: int = 150) -> str:

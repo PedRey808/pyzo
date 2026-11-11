@@ -91,7 +91,7 @@ function trackRow(t, onPlay, extraActs = []) {
     el("button", { title: "В очередь", onclick: () => { state.queue.push(t); toast("Добавлено в очередь"); } }, "＋"),
     el("button", { title: "Скачать на компьютер", onclick: (e) => saveToPc(t, e.currentTarget) }, "⬇"),
   ];
-  if (!isLocal) acts.push(el("button", { title: "Скачать на это устройство", onclick: (e) => saveToDevice(t, e.currentTarget) }, "📱"));
+  if (!isLocal && !window.MusicHubAndroid) acts.push(el("button", { title: "Скачать на это устройство", onclick: (e) => saveToDevice(t, e.currentTarget) }, "📱"));
   const row = el("div", { class: "track", "data-key": t.key || "" },
     art,
     el("div", { class: "meta", onclick: onPlay },
@@ -104,6 +104,7 @@ function trackRow(t, onPlay, extraActs = []) {
 
 // ---------- скачивание ----------
 async function saveToPc(t, btn) {
+  if (window.MusicHubAndroid) return saveToDevice(t, btn);   // в Android-приложении ⬇ = в «Музыку» телефона
   btn.disabled = true; const old = btn.textContent; btn.textContent = "…";
   try {
     const r = await api("/api/download", { json: t });
@@ -114,9 +115,16 @@ async function saveToPc(t, btn) {
 async function saveToDevice(t, btn) {
   btn.disabled = true; const old = btn.textContent; btn.textContent = "…";
   try {
-    if (t.source === "file") { location.href = `/api/library/${encodeURIComponent(t.id)}?attachment=true`; return; }
+    if (t.source === "file") {
+      const url = `/api/library/${encodeURIComponent(t.id)}?attachment=true`;
+      if (window.MusicHubAndroid) window.MusicHubAndroid.download(url, t.id.replace(/\.[^.]+$/, ""));
+      else location.href = url;
+      return;
+    }
     const r = await api("/api/prepare", { json: t });
-    location.href = "/api/file/" + encodeURI(r.key);
+    const url = "/api/file/" + encodeURI(r.key);
+    if (window.MusicHubAndroid) { window.MusicHubAndroid.download(url, (t.artist ? t.artist + " - " : "") + t.title); toast("Скачиваю в «Музыка/MusicHub»…"); }
+    else location.href = url;
   } catch (err) { toast(err.message); }
   finally { btn.disabled = false; btn.textContent = old; }
 }

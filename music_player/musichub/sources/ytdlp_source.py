@@ -4,6 +4,7 @@ from typing import List
 
 import yt_dlp
 
+from .. import config, tsdemux
 from ..models import Track
 from .base import Source, SourceError
 
@@ -53,22 +54,28 @@ class YtDlpSource(Source):
     def fetch_audio(self, track: Track, dest: Path) -> Path:
         if not track.url:
             raise SourceError("У трека нет ссылки для загрузки")
-        opts = self._opts(
-            format="bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio/best",
-            outtmpl=str(dest) + ".%(ext)s",
-            postprocessors=[{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "0"}],
-        )
+        ffmpeg = config.ffmpeg_path()
+        extra = {
+            "format": "bestaudio[ext=mp3]/bestaudio[ext=m4a]/bestaudio[acodec^=mp4a]/bestaudio/best",
+            "outtmpl": str(dest) + ".%(ext)s",
+        }
+        if ffmpeg:  # есть ffmpeg — приводим всё к mp3
+            extra["ffmpeg_location"] = ffmpeg
+            extra["postprocessors"] = [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "0"}]
+        else:       # без ffmpeg (Android) — сохраняем как есть
+            extra["fixup"] = "never"
         try:
-            with yt_dlp.YoutubeDL(opts) as ydl:
+            with yt_dlp.YoutubeDL(self._opts(**extra)) as ydl:
                 ydl.extract_info(track.url, download=True)
         except yt_dlp.utils.DownloadError as exc:
             raise SourceError(f"{self.title}: не удалось скачать ({exc})") from exc
-        result = dest.with_suffix(".mp3")
-        if not result.exists():
-            found = sorted(dest.parent.glob(dest.name + ".*"))
-            if not found:
-                raise SourceError("Файл не появился после загрузки (установлен ли ffmpeg?)")
-            result = found[0]
+        found = sorted(p for p in dest.parent.glob(dest.name + ".*") if not p.name.endswith((".part", ".ytdl")))
+        mp3 = dest.with_suffix(".mp3")
+        result = mp3 if mp3.exists() else (found[0] if found else None)
+        if result is None:
+            raise SourceError("Файл не появился после загрузки")
+        if not ffmpeg:
+            result = tsdemux.fix_if_ts(result)
         return result
 
 

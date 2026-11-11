@@ -12,12 +12,12 @@ from pathlib import Path
 TMP = tempfile.mkdtemp()
 os.environ["MUSICHUB_HOME"] = TMP
 
-from app import config  # noqa: E402
-from app.matcher import best_match, score  # noqa: E402
-from app.models import Track  # noqa: E402
-from app.service import MusicHub, safe_filename  # noqa: E402
-from app.sources.base import Source, SourceError  # noqa: E402
-from app.sources.spotify import parse_spotify_url  # noqa: E402
+from musichub import config  # noqa: E402
+from musichub.matcher import best_match, score  # noqa: E402
+from musichub.models import Track  # noqa: E402
+from musichub.service import MusicHub, safe_filename  # noqa: E402
+from musichub.sources.base import Source, SourceError  # noqa: E402
+from musichub.sources.spotify import parse_spotify_url  # noqa: E402
 
 
 def make_mp3(path: Path):
@@ -119,8 +119,8 @@ class ServiceTests(unittest.TestCase):
 
 class ServerTests(unittest.TestCase):
     def setUp(self):
-        from fastapi.testclient import TestClient
-        from app.server import create_app
+        from starlette.testclient import TestClient
+        from musichub.server import create_app
 
         config.save({"download_dir": str(Path(TMP) / "downloads2")})
         self.client = TestClient(create_app(fake_hub()))
@@ -147,8 +147,8 @@ class ServerTests(unittest.TestCase):
         self.assertIn("Неизвестный источник", r.json()["detail"])
 
     def test_password(self):
-        from fastapi.testclient import TestClient
-        from app.server import create_app
+        from starlette.testclient import TestClient
+        from musichub.server import create_app
 
         os.environ["MUSICHUB_PASSWORD"] = "pw"
         try:
@@ -157,6 +157,27 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(c.get("/api/sources", auth=("u", "pw")).status_code, 200)
         finally:
             del os.environ["MUSICHUB_PASSWORD"]
+
+
+class TsDemuxTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("ffmpeg"), "нужен ffmpeg")
+    def test_extracts_aac_from_ts(self):
+        from musichub.tsdemux import fix_if_ts
+
+        src = Path(TMP) / "seg.m4a"
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "sine=duration=1",
+                        "-c:a", "aac", "-f", "mpegts", str(src)], check=True)
+        out = fix_if_ts(src)
+        self.assertEqual(out.suffix, ".aac")
+        self.assertFalse(src.exists())
+        self.assertEqual(out.read_bytes()[0], 0xFF)
+
+    def test_non_ts_untouched(self):
+        from musichub.tsdemux import fix_if_ts
+
+        p = Path(TMP) / "plain.mp3"
+        p.write_bytes(b"ID3" + b"\0" * 500)
+        self.assertEqual(fix_if_ts(p), p)
 
 
 if __name__ == "__main__":

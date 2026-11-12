@@ -84,6 +84,8 @@ details ul{padding-left:18px;margin:8px 0;color:#c7d3de;line-height:1.45}
 .acts{display:flex;flex-wrap:wrap;gap:1.2cqw;justify-content:center;max-width:90%}
 .acts button{font-size:clamp(13px,2.1cqw,18px);padding:1.2cqw 2.2cqw}
 .acts .info{width:100%;text-align:center;font-size:clamp(12px,1.9cqw,16px)}
+.acts .auc{background:#fff8;border-radius:1.2cqw;padding:1cqw;line-height:1.5}
+#mbar .acts .auc{background:#ffffff12;border-radius:10px;padding:6px}
 .cardpop{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.8);width:58%;background:#fff;border-radius:2cqw;box-shadow:0 2cqw 5cqw #0005;padding:3cqw;text-align:center;opacity:0;pointer-events:none;transition:.25s;z-index:5;color:#222}
 .cardpop.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cardpop h4{margin:0 0 1.5cqw;font-size:3cqw}
@@ -179,6 +181,7 @@ details ul{padding-left:18px;margin:8px 0;color:#c7d3de;line-height:1.45}
           <li>Дубль — ходите ещё раз. Три дубля подряд — в тюрьму. Из тюрьмы: выбросить дубль, заплатить 500 ₽ или использовать карту освобождения.</li>
           <li>Не хватает денег — продавайте дома, закладывайте имущество, договаривайтесь со сделками. Иначе — банкротство.</li>
           <li>Сделки: предлагайте обмен городами и деньгами любому игроку на вкладке «Сделки».</li>
+          <li>Имущество банкрота уходит с молотка: на аукционе ставки делают все игроки, каждая ставка продлевает таймер. Деньги получает тот, кому банкрот задолжал (или банк).</li>
           <li>Побеждает последний, кто не обанкротился.</li>
         </ul>
       </details>
@@ -300,6 +303,7 @@ port('Западный'); chance(); city('Санкт-Петербург', 'navy'
 add({type:'tax', n:'Налог на роскошь', s:'Роскошь', amt:1000, icon:'💎'}); city('Москва', 'navy', 4000);
 
 const PORT_RENT = [250, 500, 1000, 2000];
+const AUC_FIRST = 20000, AUC_EXT = 8000;   // auction: first timer and extension after each bid (ms)
 const CHANCE = [
   {t:'Ваш стартап победил на конкурсе. Получите 1 500 ₽', a:['money', 1500]},
   {t:'Отправляйтесь на «Старт»', a:['to', 0]},
@@ -355,7 +359,8 @@ class Game {
     this.L(`Игра началась! Первым ходит ${this.players[0].name}`);
   }
   static from(o) { return Object.assign(Object.create(Game.prototype), JSON.parse(JSON.stringify(o))); }
-  pub() { const o = JSON.parse(JSON.stringify(this)); delete o.decks; return o; }
+  pub() { const o = JSON.parse(JSON.stringify(this)); delete o.decks; if (o.auction) o.auction.left = Math.max(0, o.auction.ends - Date.now()); return o; }
+  reserved(p) { return this.auction && this.auction.bidder === p.pid ? this.auction.bid : 0; }
   L(m) { this.log.push({i:++this.lseq, m}); if (this.log.length > 100) this.log.shift(); }
   P(pid) { return this.players.find(p => p.pid === pid); }
   curP() { return this.players[this.cur]; }
@@ -379,7 +384,10 @@ class Game {
       case 'accept': return this.accept(p, +d.id);
       case 'reject': case 'cancel': return this.dropTrade(p, +d.id, a);
       case 'surrender': this.L(`${p.name} сдаётся`); return this.bankrupt(p);
+      case 'bid': return this.bid(p, d.amount);
+      case 'pass': return this.aucPass(p);
     }
+    if (this.phase === 'auction') throw err('Идёт аукцион — дождитесь его окончания');
     if (this.curP() !== p) throw err('Сейчас не ваш ход');
     switch (a) {
       case 'roll': return this.roll(p);
@@ -400,7 +408,7 @@ class Game {
       case 'paydebt': {
         if (this.phase !== 'debt') throw err('У вас нет долгов');
         if (p.money < this.debtTotal()) throw err('Недостаточно денег — продайте дома или заложите имущество');
-        for (const x of this.debts) { p.money -= x.amt; if (x.to != null) this.P(x.to).money += x.amt; }
+        for (const x of this.debts) { p.money -= x.amt; if (x.to != null && !this.P(x.to).out) this.P(x.to).money += x.amt; }
         this.L(`${p.name} погасил долг ${fmt(this.debtTotal())}`);
         this.debts = [];
         return this.after();
@@ -546,7 +554,7 @@ class Game {
     if (s.h >= 5) return 'Уже построен отель';
     if (s.h > Math.min(...g.map(i => this.props[i].h))) return 'Стройте равномерно';
     if (this.debts.length && this.curP() === p) return 'Сначала погасите долг';
-    if (p.money < GROUPS[c.g].h) return 'Недостаточно денег';
+    if (p.money - this.reserved(p) < GROUPS[c.g].h) return 'Недостаточно денег';
     return null;
   }
   canSell(p, id) {
@@ -565,7 +573,7 @@ class Game {
     const e = this.ownErr(p, id); if (e) return e;
     if (!this.props[id].m) return 'Не в залоге';
     if (this.debts.length && this.curP() === p) return 'Сначала погасите долг';
-    if (p.money < this.umCost(id)) return 'Недостаточно денег';
+    if (p.money - this.reserved(p) < this.umCost(id)) return 'Недостаточно денег';
     return null;
   }
   build(p, id) {
@@ -600,8 +608,8 @@ class Game {
     for (const id of t.get) if (!this.props[id] || this.props[id].o !== b.pid) return 'Объекты уже сменили владельца';
     for (const id of [...t.give, ...t.get]) { const c = BOARD[id]; if (c.type === 'prop' && this.grp(c.g).some(i => this.props[i].h)) return `Сначала продайте постройки в группе (${c.n})`; }
     if (!(Number.isInteger(t.gm) && Number.isInteger(t.tm) && t.gm >= 0 && t.tm >= 0)) return 'Неверная сумма';
-    if (a.money < t.gm) return `У ${a.name} не хватает денег`;
-    if (b.money < t.tm) return `У ${b.name} не хватает денег`;
+    if (a.money - this.reserved(a) < t.gm) return `У ${a.name} не хватает денег`;
+    if (b.money - this.reserved(b) < t.tm) return `У ${b.name} не хватает денег`;
     return null;
   }
   offer(p, d) {
@@ -643,14 +651,81 @@ class Game {
       if (cr.length === 1 && cr[0] != null) heir = this.P(cr[0]);
       this.debts = [];
     }
-    for (const id of this.owned(p.pid)) { const s = this.props[id]; if (heir) s.o = heir.pid; else { s.o = null; s.m = false; } }
-    if (heir) { heir.money += p.money; heir.cards += p.cards; this.L(`Имущество ${p.name} переходит к ${heir.name}`); }
-    else this.L(`Имущество ${p.name} возвращается банку`);
+    // all property goes under the hammer; proceeds go to the creditor (if it is a player) or to the bank
+    const lots = this.owned(p.pid).sort((a, b) => a - b);
+    for (const id of lots) { const s = this.props[id]; s.o = null; s.m = false; s.h = 0; }
+    if (heir) { heir.money += p.money; heir.cards += p.cards; if (p.money) this.L(`${heir.name} получает оставшиеся деньги ${p.name}: ${fmt(p.money)}`); }
     p.money = 0; p.cards = 0; p.out = true; p.jail = false;
     this.trades = this.trades.filter(t => t.from !== p.pid && t.to !== p.pid);
     const al = this.alive();
-    if (al.length <= 1) { this.winner = al[0] ? al[0].pid : null; this.phase = 'over'; this.L(`🏆 Победитель — ${al[0] ? al[0].name : '—'}!`); return; }
-    if (wasCur) this.next();
+    if (al.length <= 1) { this.auction = null; this.winner = al[0] ? al[0].pid : null; this.phase = 'over'; this.L(`🏆 Победитель — ${al[0] ? al[0].name : '—'}!`); return; }
+    if (this.auction) {   // someone went bankrupt while an auction is running
+      const a = this.auction;
+      if (a.bidder === p.pid) { a.bid = 0; a.bidder = null; a.at = Date.now(); a.ends = Math.max(a.ends, Date.now() + AUC_EXT); }
+      a.lots.push(...lots.map(id => ({id, to:heir ? heir.pid : null})));
+      if (wasCur) a.after = 'next';
+      if (lots.length) this.L(`🔨 На аукцион добавлено имущество ${p.name}: ${lots.length} шт.`);
+      this.aucCheck();
+      return;
+    }
+    if (lots.length) {
+      this.L(`🔨 Имущество ${p.name} (${lots.length} шт.) выставляется на аукцион!`);
+      this.auction = {lots:lots.map(id => ({id, to:heir ? heir.pid : null})), i:0, bid:0, bidder:null, start:0, passed:[], ends:0, at:0, after:wasCur ? 'next' : this.phase, seq:0};
+      this.phase = 'auction';
+      this.openLot();
+    } else if (wasCur) this.next();
+  }
+
+  // ----- auction -----
+  openLot() {
+    const a = this.auction, c = BOARD[a.lots[a.i].id];
+    a.bid = 0; a.bidder = null; a.passed = []; a.seq++;
+    a.start = Math.max(50, r10(c.price * 0.1));
+    a.at = Date.now(); a.ends = a.at + AUC_FIRST;
+    this.L(`🔨 Лот ${a.i + 1}/${a.lots.length}: ${c.n} (цена ${fmt(c.price)}), стартовая ставка ${fmt(a.start)}`);
+  }
+  minBid() { const a = this.auction; return a.bidder ? a.bid + 10 : a.start; }
+  bid(p, amount) {
+    const a = this.auction;
+    if (this.phase !== 'auction' || !a) throw err('Сейчас нет аукциона');
+    amount = Math.floor(+amount);
+    if (a.passed.includes(p.pid)) throw err('Вы уже спасовали на этом лоте');
+    if (a.bidder === p.pid) throw err('Ваша ставка и так лидирует');
+    if (!(amount >= this.minBid())) throw err(`Минимальная ставка ${fmt(this.minBid())}`);
+    if (p.money < amount) throw err('Недостаточно денег');
+    a.bid = amount; a.bidder = p.pid; a.at = Date.now(); a.ends = Math.max(a.ends, a.at + AUC_EXT);
+    this.L(`${p.name} ставит ${fmt(amount)}`);
+    this.aucCheck();
+  }
+  aucPass(p) {
+    const a = this.auction;
+    if (this.phase !== 'auction' || !a) throw err('Сейчас нет аукциона');
+    if (a.bidder === p.pid) throw err('Ваша ставка лидирует — пасовать нельзя');
+    if (a.passed.includes(p.pid)) throw err('Вы уже спасовали');
+    a.passed.push(p.pid); a.at = Date.now();
+    this.aucCheck();
+  }
+  aucCheck() {
+    const a = this.auction; if (!a || this.phase !== 'auction') return false;
+    const active = this.alive().filter(q => q.pid !== a.bidder && !a.passed.includes(q.pid));
+    if (!active.length || Date.now() >= a.ends) { this.closeLot(); return true; }
+    return false;
+  }
+  tick() { return this.aucCheck(); }   // called regularly by whoever runs the game (host / server)
+  closeLot() {
+    const a = this.auction, lot = a.lots[a.i], c = BOARD[lot.id], w = a.bidder && this.P(a.bidder);
+    if (w && !w.out && w.money >= a.bid) {
+      w.money -= a.bid; this.props[lot.id].o = w.pid;
+      const r = lot.to != null && this.P(lot.to);
+      if (r && !r.out && r !== w) r.money += a.bid;
+      this.L(`🔨 ${c.n} продан игроку ${w.name} за ${fmt(a.bid)}${r && !r.out && r !== w ? ` (деньги получает ${r.name})` : ''}`);
+    } else this.L(`🔨 ${c.n} никто не купил — остаётся у банка`);
+    if (++a.i < a.lots.length) return this.openLot();
+    const after = a.after;
+    this.auction = null;
+    this.L('Аукцион завершён');
+    if (after === 'next') this.next(); else this.phase = after;
+    this.cleanTrades();
   }
 }
 
@@ -706,6 +781,17 @@ function botOffer(g, p) {
   }
   return null;
 }
+// auction behaviour for bots
+function botAuction(g, pid) {
+  const a = g.auction, p = g.P(pid);
+  if (!a || g.phase !== 'auction' || !p || p.out || a.bidder === pid || a.passed.includes(pid)) return null;
+  const c = BOARD[a.lots[a.i].id];
+  const completes = c.g && g.grp(c.g).every(i => i === c.id || g.props[i].o === pid);
+  const near = c.g && g.grp(c.g).filter(i => g.props[i].o === pid).length > 0;
+  const limit = Math.min(p.money - 800, c.price * (completes ? 1.6 : near ? 1.15 : 0.85));
+  const next = a.bidder ? a.bid + (a.bid < 1000 ? 100 : a.bid < 4000 ? 200 : 500) : a.start;
+  return next <= limit ? ['bid', {amount:next}] : ['pass'];
+}
 function botTrade(g, t) {
   const me = t.to, them = t.from;
   const val = id => BOARD[id].price * (g.props[id].m ? 0.5 : 1);
@@ -714,7 +800,7 @@ function botTrade(g, t) {
   for (const id of t.get) { give += val(id); const c = BOARD[id]; if (c.g && g.grp(c.g).every(i => g.props[i].o === them || t.get.includes(i))) give += c.price * 2.5; }
   return recv >= give * 1.2 + 100;
 }
-if (typeof module !== 'undefined') module.exports = {Game, GErr, BOARD, GROUPS, CHANCE, CHEST, botAct, botTrade, START, PASS, FINE};
+if (typeof module !== 'undefined') module.exports = {Game, GErr, BOARD, GROUPS, CHANCE, CHEST, botAct, botTrade, botAuction, START, PASS, FINE};
 </script>
 
 <!-- ======================= NETWORK + UI ======================= -->
@@ -905,6 +991,12 @@ setInterval(() => {
   if (MODE !== 'host' || !room || !room.game) return;
   const g = room.game; if (g.phase === 'over') return;
   const now = Date.now();
+  if (g.phase === 'auction') {
+    if (g.tick()) return sync();
+    const ac = auctionAuto(g, pid => mem(pid), now);
+    if (ac) { try { g.act(ac[0], ac[1], ac[2]); } catch (e) {} sync(); }
+    return;
+  }
   for (const t of g.trades) {
     const m = mem(t.to);
     if (m && m.bot && now - t.ts > 1500) {
@@ -921,6 +1013,20 @@ setInterval(() => {
   lastAct = now; sync();
 }, 250);
 
+// one automatic auction move (bots bid / autopilot passes), spaced out so humans can react
+function auctionAuto(g, memberOf, now) {
+  const a = g.auction;
+  for (const p of g.alive()) {
+    const m = memberOf(p.pid); if (!m) continue;
+    const away = m.left || (!m.bot && !m.connected && now - (m.discAt || 0) > 30000);
+    if (!m.bot && !away) continue;
+    let h = 0; for (const ch of p.pid) h = (h * 31 + ch.charCodeAt(0)) % 997;
+    if (now - a.at < 1200 + (h * 7 + a.seq * 13 + (a.bid / 10 | 0)) % 1600) continue;
+    const ac = m.bot ? botAuction(g, p.pid) : (a.bidder !== p.pid && !a.passed.includes(p.pid) ? ['pass'] : null);
+    if (ac) return [p.pid, ac[0], ac[1] || {}];
+  }
+  return null;
+}
 // ======================= GUEST =======================
 let conn = null, G = {code:null, name:null, token:null}, rcTimer = null, everJoined = false, connTimer = null;
 function guestJoin(code, name) {
@@ -1108,7 +1214,7 @@ function edge(k) { return k === 0 ? 0 : 1.6 + (k - 1); }
 function span(k) { return k === 0 || k === 10 ? 1.6 : 1; }
 function cellCenter(i) { const [r, c] = cellRC(i); return [(edge(c) + span(c) / 2) / TOTAL * 100, (edge(r) + span(r) / 2) / TOTAL * 100]; }
 const kfmt = n => n >= 1000 ? (n / 1000).toString().replace('.', ',') + 'к' : String(n);
-let boardBuilt = false, disp = {}, animT = {}, lastCardSeq = null, lastRolls = null, wasMyTurn = false, seenTrades = null, cardTimer = null;
+let lastAucSeq = null, boardBuilt = false, disp = {}, animT = {}, lastCardSeq = null, lastRolls = null, wasMyTurn = false, seenTrades = null, cardTimer = null;
 function buildBoard() {
   const b = $('#board'); b.innerHTML = '';
   BOARD.forEach(c => {
@@ -1138,7 +1244,7 @@ function placeTokens(g) {
     let el = document.getElementById('t_' + p.pid);
     if (!el) { el = document.createElement('div'); el.className = 'tok'; el.id = 't_' + p.pid; box.appendChild(el); }
     el.style.background = p.color; el.textContent = p.name.replace(/^Бот /, '')[0] || '?';
-    el.classList.toggle('cur', g.players[g.cur].pid === p.pid && g.phase !== 'over');
+    el.classList.toggle('cur', g.players[g.cur].pid === p.pid && g.phase !== 'over' && g.phase !== 'auction');
     const list = byCell[disp[p.pid]], k = list.indexOf(p), n = list.length;
     const [x, y] = cellCenter(disp[p.pid]);
     const cols = Math.min(n, 3), rows = Math.ceil(n / 3);
@@ -1174,7 +1280,8 @@ function updateCells(g) {
     if (bar) { const html = s.h === 5 ? '<i class="ht"></i>' : '<i class="hs"></i>'.repeat(s.h); if (bar.dataset.h !== html) { bar.innerHTML = html; bar.dataset.h = html; } }
   }
   document.querySelectorAll('.cell.here').forEach(e => e.classList.remove('here'));
-  if (g.phase !== 'over') { const c = document.getElementById('c' + g.curP().pos); c && c.classList.add('here'); }
+  const hl = g.auction ? g.auction.lots[g.auction.i].id : g.phase !== 'over' ? g.curP().pos : null;
+  if (hl != null) { const c = document.getElementById('c' + hl); c && c.classList.add('here'); }
 }
 function actionsHTML(g) {
   const me = g.players.find(p => p.pid === ME), cp = g.curP();
@@ -1182,6 +1289,7 @@ function actionsHTML(g) {
     const w = g.players.find(p => p.pid === g.winner);
     return `<div class="info winner">🏆 Победитель: ${esc(w ? w.name : '—')}</div>` + (amHost() ? `<button class="pri" data-a="newgame">🔄 Новая игра</button>` : '') + `<button data-a="leave">← В меню</button>`;
   }
+  if (g.phase === 'auction' && g.auction) return auctionHTML(g, me);
   if (!me || me.out) return `<div class="info">Вы выбыли. Ходит ${esc(cp.name)}…</div>`;
   if (cp.pid !== ME) return `<div class="info">Ходит <b style="color:${cp.color}">${esc(cp.name)}</b>…</div>`;
   if (g.phase === 'roll') {
@@ -1199,7 +1307,24 @@ function actionsHTML(g) {
   if (g.phase === 'end') return `<button class="pri" data-a="end">✔ Завершить ход</button>`;
   return '';
 }
+function auctionHTML(g, me) {
+  const a = g.auction, c = BOARD[a.lots[a.i].id], lead = a.bidder && g.P(a.bidder);
+  const col = c.g ? GROUPS[c.g].c : '#777';
+  let h = `<div class="info auc">🔨 <b>Аукцион</b> · лот ${a.i + 1} из ${a.lots.length} · ⏱ <b class="aucLeft">…</b><br>
+    <span class="dot" style="background:${col}"></span> <b>${esc(c.n)}</b> <span style="opacity:.7">(цена ${fmt(c.price)})</span><br>
+    ${lead ? `Ставка: <b>${fmt(a.bid)}</b> — <b style="color:${lead.color}">${esc(lead.name)}</b>` : `Стартовая ставка: <b>${fmt(a.start)}</b>`}</div>`;
+  if (!me || me.out) return h + '<div class="info">Вы выбыли и наблюдаете за аукционом</div>';
+  if (a.bidder === ME) return h + '<div class="info">✅ Ваша ставка лидирует</div>';
+  if (a.passed.includes(ME)) return h + '<div class="info">Вы спасовали на этом лоте</div>';
+  const base = a.bidder ? a.bid : a.start - 100;
+  const vals = a.bidder ? [100, 500, 1000].map(x => base + x) : [a.start, a.start + 400, a.start + 900];
+  h += vals.map((v, i) => `<button class="${i ? '' : 'pri'}" data-bid="${v}" ${me.money < v ? 'disabled' : ''}>${fmt(v)}</button>`).join('');
+  return h + `<button data-a="pass">Пас</button>`;
+}
+let aucEnd = 0;
+setInterval(() => { const t = Math.max(0, Math.ceil((aucEnd - Date.now()) / 1000)); document.querySelectorAll('.aucLeft').forEach(e => { e.textContent = t + ' с'; }); }, 250);
 function bindActs(el) {
+  el.querySelectorAll('[data-bid]').forEach(b => b.onclick = () => send('bid', {amount:+b.dataset.bid}));
   el.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
     const a = b.dataset.a;
     if (a === 'newgame') return admin('newgame');
@@ -1228,7 +1353,12 @@ function renderGame() {
   }
   updateCells(g); moveTokens(g);
   const cp = g.curP();
-  $('#status').innerHTML = g.phase === 'over' ? 'Игра окончена' : `Ход ${g.turn}: <span style="color:${cp.color}">${esc(cp.name)}</span>`;
+  $('#status').innerHTML = g.phase === 'over' ? 'Игра окончена' : g.phase === 'auction' ? '🔨 Аукцион' : `Ход ${g.turn}: <span style="color:${cp.color}">${esc(cp.name)}</span>`;
+  if (g.auction) {
+    aucEnd = Date.now() + g.auction.left;
+    if (lastAucSeq !== g.auction.i + ':' + g.auction.seq && lastAucSeq !== null) { buzz(120); toast('🔨 Аукцион: ' + BOARD[g.auction.lots[g.auction.i].id].n); }
+    lastAucSeq = g.auction.i + ':' + g.auction.seq;
+  } else lastAucSeq = '';
   const ah = actionsHTML(g);
   for (const el of [$('#acts'), $('#mActs')]) { if (el.dataset.h !== ah) { el.innerHTML = ah; el.dataset.h = ah; bindActs(el); } }
   // card popup
@@ -1240,6 +1370,7 @@ function renderGame() {
     clearTimeout(cardTimer); cardTimer = setTimeout(() => cpop.classList.remove('show'), 3800);
   }
   lastCardSeq = g.card ? g.card.seq : 0;
+  if (g.auction) { clearTimeout(cardTimer); $('#cardpop').classList.remove('show'); }
   // my turn notification
   const mine = g.phase !== 'over' && cp.pid === ME;
   if (mine && !wasMyTurn) { buzz(150); if (document.hidden) document.title = '🔔 Ваш ход! — Магнат'; }
@@ -1256,7 +1387,7 @@ function renderPlayers(g) {
     const m = S.room.members.find(x => x.pid === p.pid) || {};
     const n = g.owned(p.pid).length;
     const tags = [p.jail ? '🔒' : '', p.cards ? '🎫' + p.cards : '', m.bot ? '🤖' : '', !m.bot && !m.connected && !p.out ? '📵' : '', p.pid === g.winner ? '🏆' : ''].join(' ');
-    return `<div class="pl ${p.pid === cp.pid && g.phase !== 'over' ? 'cur' : ''} ${p.out ? 'out' : ''}"><span class="dot" style="background:${p.color}"></span><span class="nm">${esc(p.name)}${p.pid === ME ? ' (вы)' : ''}</span><span class="tag">${tags}</span><span class="muted" style="font-size:12px">🏠${n}</span><span class="mn">${fmt(p.money)}</span></div>`;
+    return `<div class="pl ${p.pid === cp.pid && !p.out && g.phase !== 'over' ? 'cur' : ''} ${p.out ? 'out' : ''}"><span class="dot" style="background:${p.color}"></span><span class="nm">${esc(p.name)}${p.pid === ME ? ' (вы)' : ''}</span><span class="tag">${tags}</span><span class="muted" style="font-size:12px">🏠${n}</span><span class="mn">${fmt(p.money)}</span></div>`;
   }).join('');
   if ($('#plist').dataset.h !== html) { $('#plist').innerHTML = html; $('#plist').dataset.h = html; }
 }

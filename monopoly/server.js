@@ -26,7 +26,7 @@ function loadPage() {
   return {html:html.replace('</head>', '<script>window.MAGNAT_SERVER=1</script>\n</head>'), logic:mod.exports};
 }
 const PAGE = loadPage();
-const {Game, GErr, botAct, botTrade, START} = PAGE.logic;
+const {Game, GErr, botAct, botTrade, botAuction, START} = PAGE.logic;
 
 // ---------- minimal WebSocket (RFC 6455) ----------
 class WS extends EventEmitter {
@@ -197,6 +197,12 @@ setInterval(() => {
     const humansOnline = r.members.some(m => !m.bot && m.connected);
     if (!humansOnline && now - r.touched > (r.game ? 12 : 2) * 3600e3) { rooms.delete(r.code); scheduleSave(); continue; }
     const g = r.game; if (!g || g.phase === 'over' || !humansOnline) continue;
+    if (g.phase === 'auction') {
+      if (g.tick()) { sync(r); continue; }
+      const ac = auctionAuto(g, r, now);
+      if (ac) { try { g.act(ac[0], ac[1], ac[2]); } catch (e) {} sync(r); }
+      continue;
+    }
     let done = false;
     for (const t of g.trades) {
       const m = mem(r, t.to);
@@ -215,6 +221,20 @@ setInterval(() => {
     r.lastAct = now; sync(r);
   }
 }, 250);
+
+function auctionAuto(g, r, now) {
+  const a = g.auction;
+  for (const p of g.alive()) {
+    const m = mem(r, p.pid); if (!m) continue;
+    const away = m.left || (!m.bot && !m.connected && now - (m.discAt || 0) > 30000);
+    if (!m.bot && !away) continue;
+    let h = 0; for (const ch of p.pid) h = (h * 31 + ch.charCodeAt(0)) % 997;
+    if (now - a.at < 1200 + (h * 7 + a.seq * 13 + (a.bid / 10 | 0)) % 1600) continue;
+    const ac = m.bot ? botAuction(g, p.pid) : (a.bidder !== p.pid && !a.passed.includes(p.pid) ? ['pass'] : null);
+    if (ac) return [p.pid, ac[0], ac[1] || {}];
+  }
+  return null;
+}
 
 // ---------- save / restore rooms (survives a server restart) ----------
 let saveTimer = null;

@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#7457ff">
+<meta name="theme-color" content="#1b1650">
+<script>(function(){var t='dark';try{var v=JSON.parse(localStorage.getItem('mgnt_theme'));if(v==='light'||v==='dark')t=v;}catch(e){}document.documentElement.dataset.theme=t;})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap">
 <title>Магнат онлайн</title>
@@ -182,6 +183,41 @@ details ul{padding-left:20px;margin:8px 0;color:#4d4970;line-height:1.5;font-wei
   #mbar .acts .info{font-size:14px}
   .tcols{grid-template-columns:1fr}
 }
+/* ---------- theme switch ---------- */
+.themesw{display:flex;gap:4px;align-self:center;background:#ffffff2e;padding:4px;border-radius:18px}
+.themesw button{background:transparent;border:0;box-shadow:none;color:#fff;padding:7px 14px;font-size:14px;text-shadow:0 1px 0 #0003}
+.themesw button.on{background:var(--panel);color:var(--ink);text-shadow:none;box-shadow:0 3px 0 #0003}
+
+/* ---------- dark theme ---------- */
+html[data-theme=dark]{--ink:#f1eeff;--muted:#a49ed6;--line:#463e86;--panel:#28224f;--soft:#332c66;--board:#2b8564;--cell:#302a62}
+html[data-theme=dark] body{background:#17123a linear-gradient(160deg,#2a1d6b 0%,#1d1a52 45%,#152f5a 78%,#0f4646 100%) fixed}
+html[data-theme=dark] body::before{background-image:radial-gradient(#ffffff10 2px,transparent 2.5px)}
+html[data-theme=dark] button:not(.pri):not(.bad):not(.warn){background:#3a3278;border-color:#4d449a;box-shadow:0 4px 0 #15113a,0 6px 12px #0004}
+html[data-theme=dark] button.sm:not(.pri):not(.bad):not(.warn){box-shadow:0 3px 0 #15113a}
+html[data-theme=dark] button:not(.pri):not(.bad):not(.warn):active:not(:disabled){box-shadow:0 1px 0 #15113a}
+html[data-theme=dark] .tabs button:not(.on),html[data-theme=dark] .themesw button:not(.on){background:transparent!important;box-shadow:none!important;border:0!important;color:#fff}
+html[data-theme=dark] .tabs button.on,html[data-theme=dark] .themesw button.on{background:var(--panel)!important;border:0!important;color:#c3b6ff;box-shadow:0 3px 0 #0005!important}
+html[data-theme=dark] .card{box-shadow:0 6px 0 #0006,0 14px 30px #0005}
+html[data-theme=dark] input:focus,html[data-theme=dark] select:focus{background:#3a3278}
+html[data-theme=dark] input::placeholder{color:#7d77b3}
+html[data-theme=dark] .code{color:#b7a8ff;text-shadow:0 3px 0 #15113a}
+html[data-theme=dark] details ul,html[data-theme=dark] .log div{color:#d3cef7}
+html[data-theme=dark] .board{border-color:#3a3278;box-shadow:0 8px 0 #0007,0 18px 40px #0006}
+html[data-theme=dark] .pr{color:#b8b2e6}
+html[data-theme=dark] .k-start{background:#1f6a47}html[data-theme=dark] .k-jail{background:#7a4b17}
+html[data-theme=dark] .k-free{background:#1f4f7c}html[data-theme=dark] .k-gotojail{background:#7c2539}
+html[data-theme=dark] .cell.here{background:#6b5a12}
+html[data-theme=dark] .mid{background:#211b4b radial-gradient(#2b856433 1.1cqw,transparent 1.2cqw) 0 0/6cqw 6cqw;box-shadow:inset 0 .5cqw 0 #0003}
+html[data-theme=dark] .die{box-shadow:0 .8cqw 0 #0007,0 1.4cqw 2cqw #0005;border-color:#d9d2ff}
+html[data-theme=dark] .acts .auc,html[data-theme=dark] .cardpop,html[data-theme=dark] .pl,html[data-theme=dark] .tabbody,
+html[data-theme=dark] .mbox,html[data-theme=dark] .pcard,html[data-theme=dark] .toast,html[data-theme=dark] .net{background:var(--panel)}
+html[data-theme=dark] .pl{box-shadow:0 4px 0 #0005}
+html[data-theme=dark] .pl .mn{background:#17402b;color:#6cf2a3}
+html[data-theme=dark] .tabs{background:#ffffff14}
+html[data-theme=dark] .tabbody{box-shadow:0 5px 0 #0005}
+html[data-theme=dark] .winner{color:#c3b6ff}
+html[data-theme=dark] .ava{border-color:#e9e5ff}
+@media (max-width:900px){html[data-theme=dark] #mbar{background:var(--panel);box-shadow:0 -6px 20px #0007}}
 </style>
 </head>
 <body>
@@ -192,6 +228,7 @@ details ul{padding-left:20px;margin:8px 0;color:#4d4970;line-height:1.5;font-wei
 <!-- ============ LOBBY ============ -->
 <div id="lobby" class="center-screen">
   <div class="lob">
+    <div class="themesw"><button data-set-theme="dark">🌙 Тёмная</button><button data-set-theme="light">☀️ Светлая</button></div>
     <div class="logo">🎩 МАГ<span>НАТ</span></div>
     <div class="sub">Экономическая настольная игра онлайн · 2–8 игроков · ПК и телефон</div>
     <div id="resumeBox" class="card hidden"></div>
@@ -282,6 +319,7 @@ details ul{padding-left:20px;margin:8px 0;color:#4d4970;line-height:1.5;font-wei
     <div class="row">
       <button class="sm" id="btnSurrender">🏳 Сдаться</button>
       <button class="sm" id="btnLeaveGame">← Выйти</button>
+      <button class="sm" id="btnTheme" title="Сменить тему">🌓</button>
       <span class="muted" style="font-size:12px" id="roomLbl"></span>
     </div>
   </div>
@@ -1616,6 +1654,17 @@ for (const [i, b] of [['#wChatInp', '#wChatBtn'], ['#gChatInp', '#gChatBtn']]) {
 }
 window.addEventListener('beforeunload', e => { if (MODE === 'host' && room && room.game && room.game.phase !== 'over' && !room.offline) { e.preventDefault(); e.returnValue = ''; } });
 window.addEventListener('resize', () => { if (S && S.game) placeTokens(S.game); });
+// ---------- theme ----------
+function setTheme(t) {
+  document.documentElement.dataset.theme = t; store.set('mgnt_theme', t);
+  const bar = t === 'dark' ? '#1b1650' : '#7457ff';
+  document.querySelector('meta[name=theme-color]').setAttribute('content', bar);
+  document.querySelectorAll('[data-set-theme]').forEach(b => b.classList.toggle('on', b.dataset.setTheme === t));
+  try { window.AndroidApp && AndroidApp.setBarColor && AndroidApp.setBarColor(bar); } catch (e) {}
+}
+document.querySelectorAll('[data-set-theme]').forEach(b => b.onclick = () => setTheme(b.dataset.setTheme));
+$('#btnTheme').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+setTheme(document.documentElement.dataset.theme || 'dark');
 render();
 </script>
 <script>

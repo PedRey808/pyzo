@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         web = new WebView(this);
-        web.setBackgroundColor(0xFF7457FF);
+        web.setBackgroundColor(0xFF1B1650);
         setContentView(web);
 
         WebSettings s = web.getSettings();
@@ -73,6 +73,18 @@ public class MainActivity extends Activity {
                 i.setType("text/plain");
                 i.putExtra(Intent.EXTRA_TEXT, text);
                 try { startActivity(Intent.createChooser(i, getString(R.string.invite))); } catch (Exception ignored) { }
+            });
+        }
+
+        @JavascriptInterface
+        public void setBarColor(final String hex) {
+            runOnUiThread(() -> {
+                try {
+                    int c = android.graphics.Color.parseColor(hex);
+                    getWindow().setStatusBarColor(c);
+                    getWindow().setNavigationBarColor(c);
+                    web.setBackgroundColor(c);
+                } catch (Exception ignored) { }
             });
         }
 

@@ -889,6 +889,9 @@ const store = {
 const QS = new URLSearchParams(location.search);
 const SERVER = !!window.MAGNAT_SERVER;   // page served by server.js (Termux / PC)
 const APP = !!window.AndroidApp || /MagnatApp/.test(navigator.userAgent);   // inside the Android app
+const DESKTOP = /Electron/.test(navigator.userAgent);                          // inside Magnat.exe
+const DL_APK = 'https://github.com/PedRey808/pyzo/releases/download/apk-latest/Magnat.apk';
+const DL_EXE = 'https://github.com/PedRey808/pyzo/releases/download/pc-latest/Magnat.exe';
 function peerOpts() {
   const o = {debug:1};
   if (QS.get('peerHost')) { o.host = QS.get('peerHost'); o.port = +(QS.get('peerPort') || 443); o.path = QS.get('peerPath') || '/'; o.secure = QS.get('peerSecure') !== '0'; }
@@ -1617,6 +1620,7 @@ const getName = () => { const n = nameInp.value.trim(); if (!n) { toast('Вве�
 $('#btnCreate').onclick = () => { const n = getName(); if (!n) return; if (SERVER) serverJoin(null, n, true); else { store.del('mgnt_host'); hostCreate(n, null, false); } };
 $('#btnSolo').onclick = () => { const n = getName(); if (!n) return; store.del('mgnt_host'); hostCreate(n, null, true); hostAddBot(); hostAddBot(); hostAddBot(); };
 $('#btnJoin').onclick = () => { const n = getName(); if (n) (SERVER ? serverJoin : guestJoin)($('#codeInp').value, n); };
+if (DESKTOP) $('#p2pNote').textContent = 'Игра идёт на компьютере создателя комнаты — не закрывайте у него окно игры. Нужен только интернет: друзья могут быть где угодно, с ПК или телефона.';
 if (APP) $('#p2pNote').textContent = 'Игра идёт на телефоне создателя комнаты — ему нельзя закрывать приложение и сворачивать его надолго. Нужен интернет (Wi-Fi или мобильный), сети у игроков могут быть разными.';
 if (SERVER) $('#p2pNote').textContent = 'Игра идёт на сервере. Если связь пропала — просто откройте страницу снова и нажмите «Вернуться».';
 // open rooms on this server
@@ -1641,9 +1645,12 @@ $('#btnLeaveGame').onclick = () => { if (S && S.game && S.game.phase === 'over' 
 $('#btnSurrender').onclick = () => { if (confirm('Сдаться? Ваше имущество вернётся банку.')) send('surrender'); };
 const copy = t => { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Скопировано'), () => prompt('Скопируйте:', t)); };
 $('#btnCopyCode').onclick = () => copy(S.room.code);
+const inviteText = () => `Играем в «Магнат»! Нажми «Войти» и введи код комнаты: ${S.room.code}\nСкачать игру: Android — ${DL_APK}\nПК (Windows) — ${DL_EXE}`;
 if (APP) $('#btnCopyLink').textContent = '📤 Пригласить друзей';
+if (DESKTOP || location.protocol === 'file:') $('#btnCopyLink').textContent = '📋 Скопировать приглашение';
 $('#btnCopyLink').onclick = () => {
-  if (window.AndroidApp && AndroidApp.share) return AndroidApp.share(`Играем в «Магнат»! Открой приложение, нажми «Войти» и введи код комнаты: ${S.room.code}`);
+  if (window.AndroidApp && AndroidApp.share) return AndroidApp.share(inviteText());
+  if (DESKTOP || location.protocol === 'file:') return copy(inviteText());
   const link = inviteLink();
   if (navigator.share) navigator.share({title:'Магнат', text:'Играем в Магната! Код комнаты: ' + S.room.code, url:link}).catch(() => {});
   else copy(link);

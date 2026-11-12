@@ -1,0 +1,50 @@
+name: Windows EXE
+
+on:
+  push:
+    paths:
+      - 'monopoly/index.html'
+      - 'monopoly/peerjs.min.js'
+      - 'desktop/**'
+      - '.github/workflows/windows-exe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install
+        working-directory: desktop
+        run: npm ci --no-audit --no-fund
+
+      - name: Build Magnat.exe
+        working-directory: desktop
+        run: npm run dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Magnat-exe
+          path: desktop/dist/Magnat.exe
+
+      - name: Publish to the "pc-latest" release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: pc-latest
+          target_commitish: ${{ github.sha }}
+          name: Магнат — программа для Windows
+          body: |
+            Последняя сборка игры «Магнат» для Windows 10/11 (64-бит). Установка не нужна.
+            Скачайте **Magnat.exe** и запустите. Если Windows покажет «Система Windows защитила ваш компьютер»,
+            нажмите «Подробнее» → «Выполнить в любом случае».
+            Сборка: ${{ github.run_number }}, коммит ${{ github.sha }}.
+          files: desktop/dist/Magnat.exe
+          make_latest: false

@@ -1,0 +1,30 @@
+{
+  "name": "magnat",
+  "productName": "Magnat",
+  "version": "1.0.0",
+  "description": "Магнат — экономическая настольная игра онлайн",
+  "author": "Magnat",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "prestart": "node prepare-game.js",
+    "start": "electron .",
+    "predist": "node prepare-game.js",
+    "dist": "electron-builder --win portable --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "33.4.11",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "ru.magnat.game",
+    "productName": "Magnat",
+    "copyright": "Magnat",
+    "files": ["main.js", "icon.png", "game/**"],
+    "win": {
+      "target": [{ "target": "portable", "arch": ["x64"] }],
+      "icon": "icon.png"
+    },
+    "portable": { "artifactName": "Magnat.exe" }
+  }
+}

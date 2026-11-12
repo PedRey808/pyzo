@@ -818,6 +818,7 @@ const store = {
 };
 const QS = new URLSearchParams(location.search);
 const SERVER = !!window.MAGNAT_SERVER;   // page served by server.js (Termux / PC)
+const APP = !!window.AndroidApp || /MagnatApp/.test(navigator.userAgent);   // inside the Android app
 function peerOpts() {
   const o = {debug:1};
   if (QS.get('peerHost')) { o.host = QS.get('peerHost'); o.port = +(QS.get('peerPort') || 443); o.path = QS.get('peerPath') || '/'; o.secure = QS.get('peerSecure') !== '0'; }
@@ -838,7 +839,12 @@ function setNet(st) {
   const n = $('#net'); n.classList.remove('hidden', 'online', 'connecting', 'offline'); n.classList.add(st);
   n.querySelector('span').textContent = {online:'онлайн', connecting:'подключение…', offline:'нет сети'}[st];
 }
-function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
+function buzz(ms) {
+  try {
+    if (window.AndroidApp && AndroidApp.vibrate) return AndroidApp.vibrate([].concat(ms).reduce((a, b) => a + b, 0));
+    navigator.vibrate && navigator.vibrate(ms);
+  } catch (e) {}
+}
 
 // ======================= HOST =======================
 let room = null;            // authoritative room (host only)
@@ -1526,6 +1532,7 @@ const getName = () => { const n = nameInp.value.trim(); if (!n) { toast('Вве�
 $('#btnCreate').onclick = () => { const n = getName(); if (!n) return; if (SERVER) serverJoin(null, n, true); else { store.del('mgnt_host'); hostCreate(n, null, false); } };
 $('#btnSolo').onclick = () => { const n = getName(); if (!n) return; store.del('mgnt_host'); hostCreate(n, null, true); hostAddBot(); hostAddBot(); hostAddBot(); };
 $('#btnJoin').onclick = () => { const n = getName(); if (n) (SERVER ? serverJoin : guestJoin)($('#codeInp').value, n); };
+if (APP) $('#p2pNote').textContent = 'Игра идёт на телефоне создателя комнаты — ему нельзя закрывать приложение и сворачивать его надолго. Нужен интернет (Wi-Fi или мобильный), сети у игроков могут быть разными.';
 if (SERVER) $('#p2pNote').textContent = 'Игра идёт на сервере. Если связь пропала — просто откройте страницу снова и нажмите «Вернуться».';
 // open rooms on this server
 async function refreshRooms() {
@@ -1549,7 +1556,9 @@ $('#btnLeaveGame').onclick = () => { if (S && S.game && S.game.phase === 'over' 
 $('#btnSurrender').onclick = () => { if (confirm('Сдаться? Ваше имущество вернётся банку.')) send('surrender'); };
 const copy = t => { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Скопировано'), () => prompt('Скопируйте:', t)); };
 $('#btnCopyCode').onclick = () => copy(S.room.code);
+if (APP) $('#btnCopyLink').textContent = '📤 Пригласить друзей';
 $('#btnCopyLink').onclick = () => {
+  if (window.AndroidApp && AndroidApp.share) return AndroidApp.share(`Играем в «Магнат»! Открой приложение, нажми «Войти» и введи код комнаты: ${S.room.code}`);
   const link = inviteLink();
   if (navigator.share) navigator.share({title:'Магнат', text:'Играем в Магната! Код комнаты: ' + S.room.code, url:link}).catch(() => {});
   else copy(link);
@@ -1569,7 +1578,7 @@ if (!window.MAGNAT_SERVER) (function load(urls) {
   const s = document.createElement('script'); s.src = urls[0];
   s.onerror = () => { s.remove(); load(urls.slice(1)); };
   document.head.appendChild(s);
-})(['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js']);
+})(['peerjs.min.js', 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js']);
 </script>
 </body>
 </html>

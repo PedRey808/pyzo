@@ -1,0 +1,55 @@
+plugins {
+    id 'com.android.application'
+}
+
+def runNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+def gameAssets = layout.buildDirectory.dir('gameAssets')
+
+android {
+    namespace 'ru.magnat.game'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'ru.magnat.game'
+        minSdk 26
+        targetSdk 34
+        versionCode runNumber
+        versionName "1.0.${runNumber}"
+    }
+
+    // One fixed signing key, so a new APK installs over the old one without deleting the app.
+    // This is a hobby/debug key kept in the repository on purpose, not a store release key.
+    signingConfigs {
+        shared {
+            storeFile file('magnat-debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+    buildTypes {
+        debug { signingConfig signingConfigs.shared }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.shared
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    sourceSets {
+        main { assets.srcDirs += [gameAssets.get().asFile] }
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+}
+
+// The game itself is monopoly/index.html: copy it into the APK on every build.
+def copyGame = tasks.register('copyGame', Copy) {
+    from(rootProject.file('../monopoly')) { include 'index.html', 'peerjs.min.js' }
+    into gameAssets
+}
+tasks.named('preBuild') { dependsOn copyGame }

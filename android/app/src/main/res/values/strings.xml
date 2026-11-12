@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Магнат</string>
+    <string name="invite">Пригласить в игру</string>
+    <string name="exit_question">Выйти из игры? Если вы создали комнату, игра для друзей остановится (её можно продолжить позже).</string>
+    <string name="exit">Выйти</string>
+    <string name="stay">Остаться</string>
+</resources>

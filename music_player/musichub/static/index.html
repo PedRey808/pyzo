@@ -46,6 +46,7 @@
     <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
     <symbol id="i-expand" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-eq" viewBox="0 0 24 24"><path d="M6 3v6M6 13v8M12 3v10M12 17v4M18 3v2M18 9v12"/><circle cx="6" cy="11" r="2"/><circle cx="12" cy="15" r="2"/><circle cx="18" cy="7" r="2"/></symbol>
   </svg>
 
   <div class="app">
@@ -119,6 +120,17 @@
               <button type="button" data-theme-value="system"><svg><use href="#i-auto"/></svg>Системная</button>
               <button type="button" data-theme-value="light"><svg><use href="#i-sun"/></svg>Светлая</button>
               <button type="button" data-theme-value="dark"><svg><use href="#i-moon"/></svg>Тёмная</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head eq-card-head">
+              <span class="src-logo eq-logo"><svg><use href="#i-eq"/></svg></span>
+              <div><div class="card-title">Эквалайзер</div><div id="eq-summary" class="hint">Выключен</div></div>
+            </div>
+            <div class="btn-row">
+              <button type="button" class="btn primary" data-eq-open>Настроить звук</button>
+              <button type="button" class="btn ghost" id="eq-quick-bass">Больше басов</button>
             </div>
           </div>
 
@@ -219,6 +231,7 @@
       <div class="p-right">
         <svg class="vol-icon"><use href="#i-volume"/></svg>
         <input id="p-vol" class="range vol" type="range" min="0" max="100" value="100" aria-label="Громкость">
+        <button class="icon-btn eq-btn" data-eq-open aria-label="Эквалайзер" title="Эквалайзер"><svg><use href="#i-eq"/></svg></button>
         <button class="icon-btn" id="p-expand" aria-label="Развернуть"><svg><use href="#i-expand"/></svg></button>
       </div>
     </footer>
@@ -239,7 +252,7 @@
       <div class="now-top">
         <button class="icon-btn" id="now-close" aria-label="Свернуть"><svg><use href="#i-down"/></svg></button>
         <span class="now-label">Сейчас играет</span>
-        <span class="icon-btn-spacer"></span>
+        <button class="icon-btn eq-btn" data-eq-open aria-label="Эквалайзер"><svg><use href="#i-eq"/></svg></button>
       </div>
       <div class="now-art"><img id="now-art" alt=""></div>
       <div class="now-meta">
@@ -254,6 +267,24 @@
         <button id="now-next" class="icon-btn big" aria-label="Дальше"><svg><use href="#i-next"/></svg></button>
       </div>
       <div id="now-via" class="now-via"></div>
+    </div>
+  </div>
+
+  <!-- эквалайзер -->
+  <div class="sheet-backdrop" id="eq-sheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="eq-title">
+      <div class="sheet-grip"></div>
+      <div class="sheet-head">
+        <h2 id="eq-title">Эквалайзер</h2>
+        <input type="checkbox" id="eq-on" class="switch" aria-label="Включить эквалайзер">
+        <button class="icon-btn" id="eq-close" aria-label="Закрыть"><svg><use href="#i-x"/></svg></button>
+      </div>
+      <div id="eq-presets" class="chips eq-presets"></div>
+      <div id="eq-bands" class="eq-bands"></div>
+      <div class="eq-foot">
+        <span class="hint">Двигайте ползунки — получится свой пресет. Громкость сама чуть снижается, чтобы басы не хрипели.</span>
+        <button type="button" class="btn ghost small" id="eq-reset">Сбросить</button>
+      </div>
     </div>
   </div>
 

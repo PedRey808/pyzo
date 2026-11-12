@@ -258,6 +258,7 @@ async function playCurrent() {
     $("#p-artist").textContent = (t.artist || "") + (via ? ` · звук: ${via}` : "");
     $("#now-via").textContent = via ? `Звук взят из «${via}»` : (t.source !== "file" ? SOURCE_NAMES[t.source] : "");
     setMediaSession(t);
+    eqBeforePlay();
     await audio.play();
     prefetchNext();
   } catch (err) {
@@ -279,7 +280,7 @@ function prev() {
 }
 function togglePlay() {
   if (!audio.src) { if (state.queue.length) { state.index = Math.max(state.index, 0); playCurrent(); } return; }
-  audio.paused ? audio.play() : audio.pause();
+  if (audio.paused) { eqBeforePlay(); audio.play(); } else audio.pause();
 }
 function highlight(t) {
   $$(".track.playing").forEach((n) => n.classList.remove("playing"));
@@ -333,7 +334,7 @@ setVolume(store.get("volume", 1));
 document.addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT") return;
   if (e.code === "Space") { e.preventDefault(); togglePlay(); }
-  if (e.code === "Escape") closeNow();
+  if (e.code === "Escape") { if (!$("#eq-sheet").hidden) eqClose(); else closeNow(); }
 });
 
 // полноэкранный плеер
@@ -352,6 +353,121 @@ $("#now-save").addEventListener("click", (e) => { const t = state.queue[state.in
     y0 = null;
   });
 })();
+
+// ---------- эквалайзер ----------
+const EQ_BANDS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+const EQ_LABELS = ["32", "64", "125", "250", "500", "1к", "2к", "4к", "8к", "16к"];
+const EQ_PRESETS = {
+  bass:      { name: "Больше басов", g: [7, 6, 4.5, 2, 0, 0, 0, 0, 0, 0] },
+  superbass: { name: "Супер бас",    g: [10, 9, 6.5, 3, 0, -1, 0, 0, 0, 0] },
+  rap:       { name: "Рэп",          g: [6, 5.5, 3, 1, -1, -1, 1, 0.5, 1, 2] },
+  vshape:    { name: "Басы и верха", g: [6, 5, 3, 0, -1.5, -1.5, 0, 2, 4, 5] },
+  vocal:     { name: "Вокал",        g: [-2, -2, -1, 1, 3, 4, 3, 2, 0, -1] },
+  rock:      { name: "Рок",          g: [5, 4, 2, -1, -2, -1, 2, 3, 4, 4] },
+  edm:       { name: "Электроника",  g: [6, 5, 2, 0, -2, 1, 0, 2, 4, 5] },
+  treble:    { name: "Больше верхов", g: [0, 0, 0, 0, 0, 1, 2, 4, 5, 6] },
+  flat:      { name: "Ровно",        g: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+};
+const eq = {
+  ctx: null, pre: null, filters: [],
+  on: store.get("eq-on", false),
+  preset: store.get("eq-preset", "bass"),
+  gains: store.get("eq-gains", EQ_PRESETS.bass.g.slice()),
+};
+
+function eqGraph() {
+  // Аудиограф создаём только когда эквалайзер нужен и только по действию пользователя (иначе браузер его «усыпит»)
+  if (eq.ctx) return true;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return false;
+  try {
+    const ctx = new AC();
+    const src = ctx.createMediaElementSource(audio);
+    const pre = ctx.createGain();
+    const filters = EQ_BANDS.map((f, i) => {
+      const b = ctx.createBiquadFilter();
+      b.type = i === 0 ? "lowshelf" : i === EQ_BANDS.length - 1 ? "highshelf" : "peaking";
+      b.frequency.value = f;
+      b.Q.value = 1.1;
+      return b;
+    });
+    const limiter = ctx.createDynamicsCompressor();   // чтобы громкие басы не хрипели
+    limiter.threshold.value = -1.5; limiter.knee.value = 0; limiter.ratio.value = 20;
+    limiter.attack.value = 0.003; limiter.release.value = 0.2;
+    let node = src.connect(pre);
+    for (const f of filters) node = node.connect(f);
+    node.connect(limiter).connect(ctx.destination);
+    Object.assign(eq, { ctx, pre, filters });
+    return true;
+  } catch (e) {
+    console.warn("Эквалайзер недоступен:", e);
+    return false;
+  }
+}
+function eqApply() {
+  if (!eq.ctx) { if (!eq.on || !eqGraph()) return; }
+  const g = eq.on ? eq.gains : EQ_BANDS.map(() => 0);
+  const t = eq.ctx.currentTime;
+  eq.filters.forEach((f, i) => f.gain.setTargetAtTime(g[i], t, 0.04));
+  const boost = Math.max(0, ...g);                         // запас по громкости под подъём частот
+  eq.pre.gain.setTargetAtTime(Math.pow(10, (-boost * 0.45) / 20), t, 0.04);
+  if (eq.ctx.state === "suspended") eq.ctx.resume().catch(() => {});
+}
+function eqBeforePlay() { if (eq.on || eq.ctx) eqApply(); }
+audio.addEventListener("play", () => { if (eq.ctx && eq.ctx.state === "suspended") eq.ctx.resume().catch(() => {}); });
+
+function eqSave() {
+  store.set("eq-on", eq.on); store.set("eq-preset", eq.preset); store.set("eq-gains", eq.gains);
+  const name = eq.preset === "custom" ? "Свой" : (EQ_PRESETS[eq.preset] || {}).name || "Свой";
+  $("#eq-summary").textContent = eq.on ? `Включён · ${name}` : "Выключен";
+  $("#eq-summary").className = "hint" + (eq.on ? " ok" : "");
+  $$(".eq-btn").forEach((b) => b.classList.toggle("active", eq.on));
+}
+function eqRender() {
+  $("#eq-on").checked = eq.on;
+  const pbox = $("#eq-presets"); pbox.innerHTML = "";
+  for (const [id, p] of Object.entries(EQ_PRESETS)) {
+    pbox.append(el("button", { type: "button", class: "chip" + (eq.on && eq.preset === id ? " active" : ""), onclick: () => eqSetPreset(id) }, p.name));
+  }
+  if (eq.preset === "custom") pbox.append(el("button", { type: "button", class: "chip chip-custom" + (eq.on ? " active" : "") }, "Свой"));
+  const bbox = $("#eq-bands"); bbox.innerHTML = "";
+  bbox.classList.toggle("off", !eq.on);
+  EQ_BANDS.forEach((_, i) => {
+    const db = el("span", { class: "db" }, fmtDb(eq.gains[i]));
+    const input = el("input", { type: "range", min: "-12", max: "12", step: "0.5", value: String(eq.gains[i]), "aria-label": `${EQ_LABELS[i]} Гц` });
+    input.addEventListener("input", () => {
+      eq.gains[i] = Number(input.value); db.textContent = fmtDb(eq.gains[i]);
+      if (eq.preset !== "custom" || !eq.on) {
+        eq.preset = "custom"; eq.on = true;
+        $("#eq-on").checked = true; $("#eq-bands").classList.remove("off"); renderEqPresets();
+      }
+      eqApply(); eqSave();
+    });
+    bbox.append(el("div", { class: "band" }, db, input, el("span", { class: "hz" }, EQ_LABELS[i])));
+  });
+}
+function renderEqPresets() {
+  $$("#eq-presets .chip").forEach((c) => c.classList.remove("active"));
+  if (eq.preset === "custom" && !$$("#eq-presets .chip-custom").length) {
+    $("#eq-presets").append(el("button", { type: "button", class: "chip chip-custom active" }, "Свой"));
+  }
+  const c = $("#eq-presets .chip-custom"); if (c) c.classList.toggle("active", eq.preset === "custom");
+}
+function fmtDb(v) { return (v > 0 ? "+" : "") + (Number.isInteger(v) ? v : v.toFixed(1)); }
+function eqSetPreset(id) {
+  eq.preset = id; eq.gains = EQ_PRESETS[id].g.slice(); eq.on = true;
+  eqApply(); eqSave(); eqRender();
+}
+function eqOpen() { eqRender(); $("#eq-sheet").hidden = false; }
+function eqClose() { $("#eq-sheet").hidden = true; }
+
+$$("[data-eq-open]").forEach((b) => b.addEventListener("click", eqOpen));
+$("#eq-close").addEventListener("click", eqClose);
+$("#eq-sheet").addEventListener("click", (e) => { if (e.target.id === "eq-sheet") eqClose(); });
+$("#eq-on").addEventListener("change", (e) => { eq.on = e.target.checked; eqApply(); eqSave(); eqRender(); });
+$("#eq-reset").addEventListener("click", () => eqSetPreset("flat"));
+$("#eq-quick-bass").addEventListener("click", () => { eqSetPreset("bass"); toast("Эквалайзер: больше басов"); });
+eqSave();
 
 // ---------- очередь ----------
 function renderQueue() {

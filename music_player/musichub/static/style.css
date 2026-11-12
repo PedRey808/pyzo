@@ -346,3 +346,29 @@ fieldset { min-width: 0; }
   .card { padding: 16px; border-radius: 16px; }
 }
 @media (hover: none) { .range::-webkit-slider-thumb { opacity: 1; } }
+
+/* ================= Эквалайзер ================= */
+.eq-btn.active { color: var(--accent); }
+.eq-logo { display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.eq-logo::after { display: none; }
+.eq-logo svg { width: 20px; height: 20px; }
+.sheet-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, .45); display: flex; align-items: flex-end; justify-content: center;
+  animation: fadeIn .2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.sheet { width: min(640px, 100%); background: var(--surface); border-radius: 24px 24px 0 0; padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow); animation: slideUp .28s cubic-bezier(.2, .8, .2, 1); max-height: 92dvh; overflow-y: auto; }
+@media (min-width: 861px) { .sheet-backdrop { align-items: center; } .sheet { border-radius: 24px; padding-top: 18px; } .sheet-grip { display: none; } }
+.sheet-grip { width: 40px; height: 5px; border-radius: 3px; background: var(--surface-3); margin: 0 auto 10px; }
+.sheet-head { display: flex; align-items: center; gap: 12px; }
+.sheet-head h2 { flex: 1; margin: 0; font-size: 22px; letter-spacing: -.02em; }
+.eq-presets { margin-top: 14px; }
+.eq-presets .chip.active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
+.eq-bands { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; margin: 22px 0 10px; transition: opacity .2s; }
+.eq-bands.off { opacity: .4; }
+.band { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+.band .db { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; height: 14px; }
+.band .hz { font-size: 11px; color: var(--faint); font-weight: 600; }
+.band input { writing-mode: vertical-lr; direction: rtl; width: 28px; height: 170px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.eq-foot { display: flex; align-items: center; gap: 12px; justify-content: space-between; margin-top: 8px; }
+.eq-foot .hint { font-size: 12px; }
+@media (max-width: 860px) { .band input { height: 150px; } .p-right .eq-btn { display: none; } }

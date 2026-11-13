@@ -1,0 +1,59 @@
+name: iOS IPA
+
+on:
+  push:
+    paths:
+      - 'monopoly/index.html'
+      - 'monopoly/peerjs.min.js'
+      - 'ios/**'
+      - '.github/workflows/ios-ipa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Copy the game into the app
+        run: mkdir -p ios/game && cp monopoly/index.html monopoly/peerjs.min.js ios/game/
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build (unsigned)
+        working-directory: ios
+        run: |
+          xcodebuild -project Magnat.xcodeproj -target Magnat -configuration Release -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} SYMROOT="$PWD/build" build
+          mkdir -p Payload
+          cp -R build/Release-iphoneos/Magnat.app Payload/
+          zip -qry Magnat.ipa Payload
+          ls -la Magnat.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Magnat-ipa
+          path: ios/Magnat.ipa
+
+      - name: Publish to the "ios-latest" release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ios-latest
+          target_commitish: ${{ github.sha }}
+          name: Магнат — iPhone / iPad (IPA)
+          body: |
+            Неподписанная сборка «Магната» для iPhone и iPad (iOS 15+).
+            Устанавливается через Sideloadly или AltStore с вашим Apple ID (инструкция в monopoly/README.md).
+            С бесплатным Apple ID приложение работает 7 дней, потом его нужно переподписать.
+            Сборка: ${{ github.run_number }}, коммит ${{ github.sha }}.
+          files: ios/Magnat.ipa
+          make_latest: false

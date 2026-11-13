@@ -1,0 +1,6 @@
+game/
+build/
+Payload/
+*.ipa
+Magnat.xcodeproj/
+Info.plist

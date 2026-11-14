@@ -4,7 +4,7 @@ import WebKit
 /// The whole game is game/index.html from the app bundle, shown in a WKWebView.
 final class GameViewController: UIViewController, WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler {
     private var web: WKWebView!
-    private let darkBg = UIColor(red: 0x1B / 255.0, green: 0x16 / 255.0, blue: 0x50 / 255.0, alpha: 1)
+    private let darkBg = UIColor(red: 0x0B / 255.0, green: 0x2A / 255.0, blue: 0x1D / 255.0, alpha: 1)
 
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
 

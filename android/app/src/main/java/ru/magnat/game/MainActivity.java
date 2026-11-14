@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         web = new WebView(this);
-        web.setBackgroundColor(0xFF1B1650);
+        web.setBackgroundColor(0xFF0B2A1D);
         setContentView(web);
 
         WebSettings s = web.getSettings();

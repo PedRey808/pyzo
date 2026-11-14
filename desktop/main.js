@@ -10,7 +10,7 @@ function createWindow() {
     minWidth: 820,
     minHeight: 560,
     title: 'Магнат',
-    backgroundColor: '#1b1650',
+    backgroundColor: '#0b2a1d',
     icon: path.join(__dirname, 'icon.png'),
     autoHideMenuBar: true,
     // the room creator's game must keep running when the window is minimised or in the background

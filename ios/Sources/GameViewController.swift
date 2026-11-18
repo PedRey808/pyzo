@@ -4,9 +4,10 @@ import WebKit
 /// The whole game is game/index.html from the app bundle, shown in a WKWebView.
 final class GameViewController: UIViewController, WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler {
     private var web: WKWebView!
-    private let darkBg = UIColor(red: 0x0B / 255.0, green: 0x2A / 255.0, blue: 0x1D / 255.0, alpha: 1)
+    private let darkBg = UIColor(red: 0x26 / 255.0, green: 0x25 / 255.0, blue: 0x22 / 255.0, alpha: 1)
 
-    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+    private var barStyle: UIStatusBarStyle = .lightContent
+    override var preferredStatusBarStyle: UIStatusBarStyle { barStyle }
 
     override func loadView() {
         let config = WKWebViewConfiguration()
@@ -55,6 +56,10 @@ final class GameViewController: UIViewController, WKUIDelegate, WKNavigationDele
                 view.backgroundColor = color
                 web.backgroundColor = color
                 web.scrollView.backgroundColor = color
+                var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+                color.getRed(&r, green: &g, blue: &b, alpha: &a)
+                barStyle = (0.299 * r + 0.587 * g + 0.114 * b) > 0.63 ? .darkContent : .lightContent
+                setNeedsStatusBarAppearanceUpdate()
             }
         default:
             break

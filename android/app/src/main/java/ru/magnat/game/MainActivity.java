@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         web = new WebView(this);
-        web.setBackgroundColor(0xFF0B2A1D);
+        web.setBackgroundColor(0xFF262522);
         setContentView(web);
 
         WebSettings s = web.getSettings();
@@ -84,6 +84,7 @@ public class MainActivity extends Activity {
                     getWindow().setStatusBarColor(c);
                     getWindow().setNavigationBarColor(c);
                     web.setBackgroundColor(c);
+                    setLightBars(isLight(c));
                 } catch (Exception ignored) { }
             });
         }
@@ -93,6 +94,20 @@ public class MainActivity extends Activity {
             Vibrator v = (Vibrator) getSystemService(VIBRATOR_SERVICE);
             if (v != null && v.hasVibrator()) v.vibrate(VibrationEffect.createOneShot(Math.max(1, Math.min(ms, 1000)), VibrationEffect.DEFAULT_AMPLITUDE));
         }
+    }
+
+    private static boolean isLight(int c) {
+        double l = 0.299 * android.graphics.Color.red(c) + 0.587 * android.graphics.Color.green(c) + 0.114 * android.graphics.Color.blue(c);
+        return l > 160;
+    }
+
+    /** Dark status/navigation bar icons on a light background, light icons on a dark one. */
+    @SuppressWarnings("deprecation")
+    private void setLightBars(boolean light) {
+        android.view.View d = getWindow().getDecorView();
+        int f = d.getSystemUiVisibility();
+        int mask = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        d.setSystemUiVisibility(light ? (f | mask) : (f & ~mask));
     }
 
     @Override

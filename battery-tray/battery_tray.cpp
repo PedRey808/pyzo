@@ -70,6 +70,7 @@ enum : UINT {
     ID_NOTIFY,
     ID_AUTOSTART,
     ID_OPENINI,
+    ID_DIAG,
     ID_EXIT,
 };
 
@@ -89,6 +90,7 @@ struct Settings {
     int lowThreshold = 15;
     bool overlay = true;
     bool notify = true;
+    bool hideDisconnected = true;
     std::vector<std::wstring> exclude; // подстроки имён в нижнем регистре
 };
 
@@ -102,6 +104,7 @@ static UINT g_msgTaskbarCreated;
 static Settings g_cfg;
 static std::wstring g_iniPath;
 static std::wstring g_exePath;
+static std::wstring g_logPath;
 
 static CRITICAL_SECTION g_lock;
 static std::vector<Device> g_shared; // пишет рабочий поток, читает UI
@@ -173,7 +176,9 @@ static void WriteDefaultIni() {
         L"; 1 — уведомлять, когда заряд ниже порога\r\n"
         L"Notify=1\r\n"
         L"; Скрыть устройства: части имён через точку с запятой, например: AirPods;Xbox\r\n"
-        L"Exclude=\r\n";
+        L"Exclude=\r\n"
+        L"; 1 — скрывать Bluetooth-устройства, которые Windows считает отключёнными\r\n"
+        L"HideDisconnected=1\r\n";
     HANDLE f = CreateFileW(g_iniPath.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (f == INVALID_HANDLE_VALUE) return;
     DWORD w;
@@ -189,6 +194,7 @@ static void LoadSettings() {
     g_cfg.lowThreshold = (std::min)(100, (std::max)(0, IniInt(L"LowThreshold", 15)));
     g_cfg.overlay = IniInt(L"ShowOverlay", 1) != 0;
     g_cfg.notify = IniInt(L"Notify", 1) != 0;
+    g_cfg.hideDisconnected = IniInt(L"HideDisconnected", 1) != 0;
 
     g_cfg.exclude.clear();
     wchar_t buf[2048];
@@ -203,6 +209,28 @@ static void LoadSettings() {
             part += all[i];
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Диагностический лог (battery-tray.log рядом с exe, перезаписывается при каждом опросе)
+// ---------------------------------------------------------------------------
+static void WriteLog(const std::wstring& text) {
+    HANDLE f = CreateFileW(g_logPath.c_str(), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS,
+                           FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (f == INVALID_HANDLE_VALUE) return;
+    DWORD w;
+    WORD bom = 0xFEFF;
+    WriteFile(f, &bom, sizeof bom, &w, nullptr);
+    WriteFile(f, text.c_str(), (DWORD)(text.size() * sizeof(wchar_t)), &w, nullptr);
+    CloseHandle(f);
+}
+
+static std::wstring NowText() {
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    wchar_t b[64];
+    swprintf(b, 64, L"%02u.%02u.%04u %02u:%02u:%02u", st.wDay, st.wMonth, st.wYear, st.wHour, st.wMinute, st.wSecond);
+    return b;
 }
 
 // ---------------------------------------------------------------------------
@@ -288,9 +316,13 @@ static bool Excluded(const std::wstring& name, const std::vector<std::wstring>& 
     return false;
 }
 
-static void ScanBluetooth(std::vector<Device>& out, const std::vector<std::wstring>& exclude) {
+static void ScanBluetooth(std::vector<Device>& out, const std::vector<std::wstring>& exclude, bool hideDisconnected,
+                          std::wstring& report) {
     HDEVINFO h = SetupDiGetClassDevsW(nullptr, nullptr, nullptr, DIGCF_ALLCLASSES | DIGCF_PRESENT);
-    if (h == INVALID_HANDLE_VALUE) return;
+    if (h == INVALID_HANDLE_VALUE) {
+        report += L"ОШИБКА: SetupDiGetClassDevs не сработал, код " + std::to_wstring(GetLastError()) + L"\r\n";
+        return;
+    }
 
     // Узлы одного физического устройства объединяем по ContainerId.
     std::map<std::wstring, std::vector<Node>> groups;
@@ -330,6 +362,25 @@ static void ScanBluetooth(std::vector<Device>& out, const std::vector<std::wstri
     }
     SetupDiDestroyDeviceInfoList(h);
 
+    std::wstring btLines, inputLines;
+    int total = 0;
+    for (auto& kv : groups) {
+        for (auto& n : kv.second) {
+            ++total;
+            // Мыши и клавиатуры: по instance id видно, как подключено (Bluetooth или USB/донгл).
+            std::wstring c = Lower(n.cls);
+            if (c == L"mouse" || c == L"keyboard") {
+                std::wstring li = Lower(n.inst);
+                const wchar_t* how = (li.find(L"{00001124") != std::wstring::npos) ? L"Bluetooth"
+                                     : (li.find(L"{00001812") != std::wstring::npos) ? L"Bluetooth LE"
+                                     : (li.find(L"vid_") != std::wstring::npos) ? L"USB (провод или донгл)"
+                                                                                 : L"встроенное/другое";
+                inputLines += L"  " + std::wstring(c == L"mouse" ? L"[мышь] " : L"[клава] ") + n.name + L"  —  " +
+                              how + L"\r\n      " + n.inst + L"\r\n";
+            }
+        }
+    }
+
     for (auto& kv : groups) {
         auto& nodes = kv.second;
         int battery = -1;
@@ -347,8 +398,15 @@ static void ScanBluetooth(std::vector<Device>& out, const std::vector<std::wstri
                 (StartsWithI(n.inst, L"BTHENUM\\DEV_") || StartsWithI(n.inst, L"BTHLE\\DEV_")))
                 mainName = n.name;
         }
+        bool isBt = !mainName.empty();
+        if (isBt || battery >= 0) {
+            btLines += L"  " + (!mainName.empty() ? mainName : batteryNodeName) + L"  —  заряд: " +
+                       (battery >= 0 ? std::to_wstring(battery) + L"%" : std::wstring(L"Windows не сообщает")) +
+                       L", подключено: " + (connTrue ? L"да" : connFalse ? L"нет" : L"?") + L"\r\n";
+        }
         if (battery < 0 || battery > 100) continue;
-        if (connFalse && !connTrue) continue; // сопряжено, но сейчас не подключено — значение устарело
+        // Сопряжено, но сейчас не подключено — значение устарело.
+        if (hideDisconnected && connFalse && !connTrue) continue;
 
         Device dev;
         dev.id = kv.first;
@@ -358,11 +416,15 @@ static void ScanBluetooth(std::vector<Device>& out, const std::vector<std::wstri
         if (Excluded(dev.name, exclude)) continue;
         out.push_back(std::move(dev));
     }
+
+    report += L"Всего узлов устройств: " + std::to_wstring(total) + L"\r\n\r\n";
+    report += L"Bluetooth-устройства (сопряжённые):\r\n" + (btLines.empty() ? L"  (нет)\r\n" : btLines) + L"\r\n";
+    report += L"Мыши и клавиатуры:\r\n" + (inputLines.empty() ? L"  (нет)\r\n" : inputLines) + L"\r\n";
 }
 
 typedef DWORD(WINAPI* PFN_XInputGetBatteryInformation)(DWORD, BYTE, XINPUT_BATTERY_INFORMATION*);
 
-static void ScanXInput(std::vector<Device>& out, const std::vector<std::wstring>& exclude) {
+static void ScanXInput(std::vector<Device>& out, const std::vector<std::wstring>& exclude, std::wstring& report) {
     static PFN_XInputGetBatteryInformation fn = nullptr;
     static bool tried = false;
     if (!tried) {
@@ -370,11 +432,19 @@ static void ScanXInput(std::vector<Device>& out, const std::vector<std::wstring>
         HMODULE m = LoadLibraryW(L"xinput1_4.dll");
         if (m) fn = (PFN_XInputGetBatteryInformation)(void*)GetProcAddress(m, "XInputGetBatteryInformation");
     }
-    if (!fn) return;
+    report += L"Xbox-геймпады (XInput):\r\n";
+    if (!fn) {
+        report += L"  xinput1_4.dll недоступна\r\n\r\n";
+        return;
+    }
 
+    bool any = false;
     for (DWORD user = 0; user < 4; ++user) {
         XINPUT_BATTERY_INFORMATION bi{};
         if (fn(user, BATTERY_DEVTYPE_GAMEPAD, &bi) != ERROR_SUCCESS) continue;
+        any = true;
+        report += L"  слот " + std::to_wstring(user + 1) + L": тип " + std::to_wstring(bi.BatteryType) + L", уровень " +
+                  std::to_wstring(bi.BatteryLevel) + L"\r\n";
         if (bi.BatteryType == BATTERY_TYPE_DISCONNECTED || bi.BatteryType == BATTERY_TYPE_WIRED) continue;
         static const int levels[] = {5, 30, 65, 100}; // EMPTY, LOW, MEDIUM, FULL
         Device dev;
@@ -386,6 +456,7 @@ static void ScanXInput(std::vector<Device>& out, const std::vector<std::wstring>
         if (Excluded(dev.name, exclude)) continue;
         out.push_back(std::move(dev));
     }
+    report += any ? L"\r\n" : L"  (нет)\r\n\r\n";
 }
 
 static DWORD WINAPI WorkerProc(LPVOID) {
@@ -393,13 +464,22 @@ static DWORD WINAPI WorkerProc(LPVOID) {
         EnterCriticalSection(&g_lock);
         std::vector<std::wstring> exclude = g_cfg.exclude;
         DWORD intervalMs = (DWORD)g_cfg.intervalSec * 1000;
+        bool hideDisconnected = g_cfg.hideDisconnected;
         LeaveCriticalSection(&g_lock);
 
+        std::wstring report = L"BatteryTray — диагностика, " + NowText() + L"\r\n" + g_exePath + L"\r\n\r\n";
         std::vector<Device> list;
-        ScanBluetooth(list, exclude);
-        ScanXInput(list, exclude);
+        ScanBluetooth(list, exclude, hideDisconnected, report);
+        ScanXInput(list, exclude, report);
         std::stable_sort(list.begin(), list.end(),
                          [](const Device& a, const Device& b) { return (int)a.kind < (int)b.kind; });
+
+        report += L"ПОКАЗЫВАЮ НА ПАНЕЛИ (" + std::to_wstring(list.size()) + L"):\r\n";
+        for (auto& d : list) report += L"  " + d.name + L": " + std::to_wstring(d.level) + L"%\r\n";
+        if (list.empty())
+            report += L"  ничего. Если мышь/наушники выше помечены как USB или «Windows не сообщает» —\r\n"
+                      L"  их заряд Windows не отдаёт (обычно это фирменные донглы Logitech/Razer и т.п.).\r\n";
+        WriteLog(report);
 
         EnterCriticalSection(&g_lock);
         g_shared = std::move(list);
@@ -419,11 +499,11 @@ static void RequestRefresh() { SetEvent(g_wakeEvent); }
 static const wchar_t* Glyph(Kind k) {
     // Коды одинаковы в «Segoe Fluent Icons» (Win11) и «Segoe MDL2 Assets» (Win10).
     switch (k) {
-        case Kind::Headphones: return L"";
-        case Kind::Mouse: return L"";
-        case Kind::Keyboard: return L"";
-        case Kind::Gamepad: return L"";
-        default: return L""; // Bluetooth
+        case Kind::Headphones: return L"\uE7F6";
+        case Kind::Mouse: return L"\uE962";
+        case Kind::Keyboard: return L"\uE765";
+        case Kind::Gamepad: return L"\uE7FC";
+        default: return L"\uE702"; // Bluetooth
     }
 }
 
@@ -779,6 +859,7 @@ static void ShowMenu() {
     AppendMenuW(m, MF_STRING | (g_cfg.notify ? MF_CHECKED : 0), ID_NOTIFY, L"Предупреждать о низком заряде");
     AppendMenuW(m, MF_STRING | (AutostartEnabled() ? MF_CHECKED : 0), ID_AUTOSTART, L"Запускать вместе с Windows");
     AppendMenuW(m, MF_STRING, ID_OPENINI, L"Открыть настройки…");
+    AppendMenuW(m, MF_STRING, ID_DIAG, L"Диагностика…");
     AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(m, MF_STRING, ID_EXIT, L"Выход");
 
@@ -824,6 +905,9 @@ static void OnCommand(UINT id) {
         case ID_OPENINI:
             ShellExecuteW(nullptr, L"open", L"notepad.exe", (L"\"" + g_iniPath + L"\"").c_str(), nullptr, SW_SHOWNORMAL);
             break;
+        case ID_DIAG:
+            ShellExecuteW(nullptr, L"open", L"notepad.exe", (L"\"" + g_logPath + L"\"").c_str(), nullptr, SW_SHOWNORMAL);
+            break;
         case ID_EXIT:
             DestroyWindow(g_main);
             return;
@@ -845,6 +929,18 @@ static LRESULT CALLBACK MainProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             UpdateTray(false);
             CheckLowBattery();
             RenderOverlay(false);
+            {
+                static bool first = true;
+                if (first) {
+                    first = false;
+                    if (g_devices.empty())
+                        Balloon(L"BatteryTray запущен",
+                                L"Устройств с батареей не нашёл. Иконка-батарейка в трее (под ^) → «Диагностика…».");
+                    else
+                        Balloon(L"BatteryTray запущен", L"Нашёл устройств: " + std::to_wstring(g_devices.size()) +
+                                                            L". Проценты — слева от трея.");
+                }
+            }
             return 0;
         case WM_APP_TRAY:
             switch (LOWORD(lp)) {
@@ -923,6 +1019,9 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
     GetModuleFileNameW(nullptr, path, MAX_PATH);
     g_exePath = path;
     g_iniPath = g_exePath.substr(0, g_exePath.find_last_of(L"\\/") + 1) + L"battery-tray.ini";
+    g_logPath = g_exePath.substr(0, g_exePath.find_last_of(L"\\/") + 1) + L"battery-tray.log";
+    WriteLog(L"BatteryTray запущен " + NowText() + L", первый опрос ещё не закончился.\r\n"
+             L"Если этот текст не меняется — программа упала при опросе устройств.\r\n");
     WriteDefaultIni();
     LoadSettings();
     g_lightTheme = ReadLightTheme();
